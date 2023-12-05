@@ -1,0 +1,35 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# stabiot
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The goal of `stabiot` is to help statistician and programmer using R functions 
+and method to oversight the outputs usually produced by SAS from vendors in clinical 
+trials. The data sets should be ADaM format perfectly, but not must follow the CDISC 
+standard.
+
+## Installation
+
+You can install the development version of `stabiot` like so:
+
+```{r gh-installation, eval = FALSE}
+if (!require("devtools")) {
+  install.packages("devtools")
+}
+devtools::install_github("kaigu1990/stabiot")
+```

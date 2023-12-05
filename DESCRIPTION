@@ -1,0 +1,34 @@
+Package: stabiot
+Type: Package
+Title: Common Statistical Analysis for Clinical Trials in Biotech
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Kai", "Gu", , "gukai1212@163.com", role = c("aut", "cre", "cph"))
+  )
+Maintainer: Kai Gu <gukai1212@163.com>
+Description: Providing common statistical analysis for oversighting process in 
+    clinical trials of biotech, making the outputs can be compared with SAS results.
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+Depends: 
+    R (>= 3.6)
+Imports:
+    checkmate,
+    dplyr,
+    lifecycle,
+    magrittr,
+    methods,
+    rlang,
+    stats
+Suggests: 
+    knitr,
+    rmarkdown,
+    spelling,
+    testthat (>= 3.0.0),
+    usethis,
+    vdiffr
+VignetteBuilder: knitr
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Language: en-US
