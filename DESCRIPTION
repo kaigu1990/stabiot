@@ -15,22 +15,20 @@ Depends:
     R (>= 3.6)
 Imports:
     checkmate,
-    dplyr,
     lifecycle,
     magrittr,
     methods,
-    rlang,
     stats
 Suggests: 
     knitr,
     rmarkdown,
     spelling,
     testthat (>= 3.0.0),
-    usethis,
-    vdiffr
+    usethis
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Language: en-US
 URL: https://github.com/kaigu1990/stabiot
 BugReports: https://github.com/kaigu1990/stabiot/issues
+Config/testthat/edition: 3

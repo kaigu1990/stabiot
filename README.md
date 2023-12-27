@@ -4,6 +4,8 @@
 # stabiot
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/kaigu1990/stabiot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/kaigu1990/stabiot/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The goal of `stabiot` is to help statistician and programmer using R

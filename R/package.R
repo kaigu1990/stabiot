@@ -6,4 +6,6 @@
 
 #' @import checkmate
 #' @import methods
+#' @importFrom lifecycle deprecated
+#' @importFrom stats pbeta rbinom
 NULL
