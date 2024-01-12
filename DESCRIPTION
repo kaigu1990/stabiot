@@ -15,12 +15,15 @@ Depends:
     R (>= 3.6)
 Imports:
     checkmate,
+    dplyr,
+    emmeans,
     lifecycle,
     magrittr,
-    methods,
-    stats
+    stats,
+    tibble
 Suggests: 
     knitr,
+    mmrm,
     rmarkdown,
     spelling,
     testthat (>= 3.0.0),
