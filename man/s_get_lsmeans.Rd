@@ -109,4 +109,18 @@ fit2 <- fev_data \%>\%
 
 s_get_lsmeans(fit2, "ARMCD")
 }
+\references{
+SAS code for your reference with consistent results.
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{proc mixed data=fev_data;
+  class ARMCD(ref='PBO') AVISIT RACE SEX USUBJID;
+  model FEV1 = RACE SEX ARMCD ARMCD*AVISIT / ddfm=KR;
+  repeated AVISIT / subject=USUBJID type=UN r rcorr;
+  lsmeans ARMCD*AVISIT / cl alpha=0.05 diff slice=AVISIT;
+  lsmeans ARMCD / cl alpha=0.05 diff;
+  lsmestimate ARMCD*AVISIT [1,1 4] [-1,2 4] / cl upper alpha=0.025 testvalue=2;
+  ods output lsmeans=lsm diffs=diff LSMEstimates=est;
+run;
+}\if{html}{\out{</div>}}
+}
 \keyword{internal}

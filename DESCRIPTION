@@ -15,10 +15,12 @@ Depends:
     R (>= 3.6)
 Imports:
     checkmate,
+    DescTools,
     dplyr,
     emmeans,
     lifecycle,
     magrittr,
+    rlang,
     stats,
     tibble
 Suggests: 
