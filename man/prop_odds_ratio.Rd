@@ -3,6 +3,7 @@
 \name{prop_odds_ratio}
 \alias{prop_odds_ratio}
 \alias{s_propci}
+\alias{s_odds_ratio}
 \alias{h_prep_prop}
 \title{Computing Proportion and Odds Ratio}
 \usage{
@@ -19,6 +20,21 @@ s_propci(
     "jp"),
   alternative = c("two.sided", "less", "greater"),
   ...
+)
+
+s_odds_ratio(
+  data,
+  var,
+  by,
+  by.level = NULL,
+  event = NULL,
+  strata = NULL,
+  conf.level = 0.95,
+  or.glm = FALSE,
+  or.method = c("wald", "mle", "midp"),
+  strata.method = c("CMH", "clogit"),
+  correct = FALSE,
+  exact = FALSE
 )
 
 h_prep_prop(data, var, by, by.level, event)
@@ -54,11 +70,35 @@ Wald. More details see \link[DescTools:BinomDiffCI]{DescTools::BinomDiffCI}.}
 must be one of "two.sided" (default), "greater" or "less".}
 
 \item{...}{other arguments to be passed to \link[DescTools:BinomCI]{DescTools::BinomCI}.}
+
+\item{strata}{(\code{vector})\cr a character vector is used for stratification.}
+
+\item{or.glm}{(\code{logical})\cr a logical indicating whether to use logit method to
+calculate the odds ratio. If TRUE, the \code{glm} with logit is used, otherwise the
+common method from \code{DescTools::OddsRatio}.}
+
+\item{or.method}{(\code{string})\cr string indicating the method from \code{DescTools::OddsRatio}
+used to calculate odds ratio when the \code{or.glm} is FALSE.}
+
+\item{strata.method}{(\code{string})\cr string indicating the method used to calculate
+stratified odds ratio, Cochran-Mantel-Haenszel Chi-Squared test (CMH) or conditional
+logistic regression (clogit).}
+
+\item{correct}{(\code{logical})\cr a logical indicating whether to apply continuity
+correction when computing the test statistic.}
+
+\item{exact}{(\code{logical})\cr a logical indicating whether the Mantel-Haenszel
+test or the exact conditional test (given the strata margins) should be computed.}
 }
 \value{
 \itemize{
 \item \code{s_propci} returns an object of class \code{prop_ci} that is a list contains
-proportion rate, proportion difference and arguments.
+proportion rate, proportion difference and input arguments.
+}
+
+\itemize{
+\item \code{s_odds_ratio} returns an object of class \code{or_ci} that is a list contains
+odds ratio with or without stratification and input arguments.
 }
 }
 \description{
@@ -68,18 +108,32 @@ Compute confidence interval for proportion and difference of binomial response,
 and odds ratio using the \code{DescTools} package. As an alternative, use \code{stats::glm}
 with \code{logit} link to estimate the odds ratio. Regarding to stratified odds ratio,
 use Cochran-Mantel-Haenszel test (\code{stats::mantelhaen.test}) or conditional logistic
-regression (\code{survival::clogit}) to handle with.
+regression (\code{survival::clogit}) to handle with. However this CMH test function is
+limited to the 2 by 2 by K scenario, whereas conditional logistic regression
+can handle 2 by N by K case.
 }
 \section{Functions}{
 \itemize{
 \item \code{s_propci()}: Computes the confidence interval of proportion/response
 rate and difference of two proportions/rates.
 
+\item \code{s_odds_ratio()}: Computes the confidence interval of common odds ratio.
+And also provides stratified odds ratio with Cochran-Mantel-Haenszel chi-squared
+test and conditional logistic regression.
+
 \item \code{h_prep_prop()}: Helper Function for Pre-processing Proportion Data.
 
 }}
 \note{
-The proportion difference can only support the two-levels for \code{by} variable.
+\itemize{
+\item The proportion difference can only support the two-levels for \code{by} variable.
+\item Compute odds ratio when \code{or.glm} is FALSE, 0.5 will be added to 2 x 2 table
+in case of zero entries. More details can be found in \link[DescTools:OddsRatio]{DescTools::OddsRatio}.
+\item The arguments of this function can only match few parameters of SAS \verb{proc freq}
+to calculate the odds ratio. For example, \code{mantelhaen.test} corresponds the
+Mantel-Haenszel Estimator with the same reference article, and using \code{correct = FALSE}
+can produce the Wald confidence interval same as the default parameters of SAS.
+}
 }
 \examples{
 set.seed(12)
@@ -91,11 +145,31 @@ dta <- data.frame(
   strata3 = factor(sample(c("E", "F"), 100, TRUE))
 )
 
-# Not having by variable:
+# not having by variable:
 s_propci(dta, var = "orr")
 
-# Two levels of by variable:
+# two levels of by variable:
 s_propci(dta, var = "orr", by = "trtp")
 # opposite order of trtp with above:
 s_propci(dta, var = "orr", by = "trtp", by.level = c("TRT", "PBO"), event = 1)
+
+# without stratification:
+s_odds_ratio(dta, var = "orr", by = "trtp", or.method = "wald")
+
+# with three stratifications, strata1 - strata3:
+s_odds_ratio(
+  dta,
+  var = "orr", by = "trtp",
+  strata = c("strata1", "strata2", "strata3"),
+  strata.method = "CMH",
+  correct = FALSE
+)
+
+# using condition logistic regression:
+s_odds_ratio(
+  dta,
+  var = "orr", by = "trtp",
+  strata = c("strata1", "strata2", "strata3"),
+  strata.method = "clogit"
+)
 }
