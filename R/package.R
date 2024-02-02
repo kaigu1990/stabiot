@@ -6,7 +6,10 @@
 
 #' @import checkmate
 #' @importFrom lifecycle deprecated
-#' @importFrom stats pbeta rbinom confint
+#' @importFrom stats pbeta rbinom confint as.formula setNames coef
+#' @importFrom dplyr count add_count group_by
+#' @importFrom rlang sym := .data
+#' @importFrom survival coxph Surv strata
 NULL
 
 .onLoad <- function(libname, pkgname) {
