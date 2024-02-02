@@ -264,7 +264,9 @@ s_odds_ratio <- function(data,
       # follow the preferred 2x2 table structure
       DescTools::OddsRatio(method = or.method, conf.level = conf.level)
   }
-  or_res <- setNames(or_res, c("or.est", "lwr.ci", "upr.ci"))
+  or_res <- tibble::tibble(
+    !!!setNames(or_res, c("or.est", "lwr.ci", "upr.ci"))
+  )
 
   stra_or_res <- if (!is.null(strata)) {
     if (strata.method == "CMH") {
@@ -279,12 +281,15 @@ s_odds_ratio <- function(data,
         purrr::map_int(nrow)
       tb <- as.table(array(c(tab), dim = c(2, 2, prod(grpn))))
       mod <- stats::mantelhaen.test(
-        tb, conf.level = conf.level,
+        tb,
+        conf.level = conf.level,
         correct = correct, exact = exact
       )
-      setNames(
-        c(mod$estimate, mod$conf.int, mod$p.value),
-        c("or.est", "lwr.ci", "upr.ci", "pval")
+      tibble::tibble(
+        !!!setNames(
+          c(mod$estimate, mod$conf.int, mod$p.value),
+          c("or.est", "lwr.ci", "upr.ci", "pval")
+        )
       )
     } else {
       mod <- survival::clogit(
@@ -305,7 +310,8 @@ s_odds_ratio <- function(data,
             row.names = gsub(pattern = paste0("^", by), x = .x, "")
           )
         ) %>%
-        purrr::list_rbind()
+        purrr::list_rbind() %>%
+        tibble::tibble()
     }
   } else {
     NULL
@@ -320,6 +326,7 @@ s_odds_ratio <- function(data,
         by = by,
         by.level = object$by.level,
         event = object$event,
+        strata = strata,
         conf.level = conf.level,
         or.method = ifelse(or.glm, "logit", or.method),
         strata.method = ifelse(

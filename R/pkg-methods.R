@@ -33,3 +33,44 @@ print.s_lsmeans <- function(x, ...) {
 
   invisible(x)
 }
+
+#' @describeIn prop_odds_ratio prints proportion and confidence interval.
+#' @exportS3Method
+#' @keywords internal
+print.prop_ci <- function(x, ...) {
+  cat(sprintf("Proportion and %s confidence interval:", x$params$method))
+  cat("\n")
+  print(x$prop_est)
+
+  if (!is.null(x$params$by.level)) {
+    cat(sprintf("\nProportion Difference and %s confidence interval:", x$params$diff.method))
+    cat("\n")
+    print(x$prop_diff)
+  }
+
+  invisible(x)
+}
+
+#' @describeIn prop_odds_ratio prints odds ratio and confidence interval.
+#' @exportS3Method
+#' @keywords internal
+print.or_ci <- function(x, ...) {
+  comp <- paste0(rev(x$params$by.level), collapse = "/")
+  cat(sprintf("Common Odds Ratio (%s) and %s confidence interval:", comp, x$params$or.method))
+  cat("\n")
+  print(x$or)
+
+  if (!is.null(x$params$strata)) {
+    cat(sprintf(
+      "\nStratified Odds Ratio (%s) using %s", comp,
+      ifelse(x$params$strata.method == "CMH",
+        "Cochran-Mantel-Haenszel Chi-Squared Test:",
+        "Conditional logistic regression:"
+      )
+    ))
+    cat("\n")
+    print(x$strata_or)
+  }
+
+  invisible(x)
+}

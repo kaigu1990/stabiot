@@ -119,7 +119,11 @@ test_that("s_odds_ratio works as expected with default arguments, no stratificat
   expect_null(res$strata_or)
   expect_equal(
     res$or,
-    setNames(c(0.8484848, 0.3831831, 1.8788054), c("or.est", "lwr.ci", "upr.ci")),
+    tibble::tibble(
+      or.est = 0.8484848,
+      lwr.ci = 0.3831831,
+      upr.ci = 1.8788054
+    ),
     tolerance = 0.0001
   )
   expect_equal(
@@ -129,6 +133,7 @@ test_that("s_odds_ratio works as expected with default arguments, no stratificat
       by = "trtp",
       by.level = c("PBO", "TRT"),
       event = 1,
+      strata = NULL,
       conf.level = 0.95,
       or.method = "wald",
       strata.method = NA
@@ -153,9 +158,11 @@ test_that("s_odds_ratio works as expected with stratification", {
   )
   expect_equal(
     res$strata_or,
-    setNames(
-      c(0.7499121, 0.3248143, 1.7313529, 0.5089342),
-      c("or.est", "lwr.ci", "upr.ci", "pval")
+    tibble::tibble(
+      or.est = 0.7499121,
+      lwr.ci = 0.3248143,
+      upr.ci = 1.7313529,
+      pval = 0.5089342
     ),
     tolerance = 0.0001
   )
@@ -181,16 +188,22 @@ test_that("s_odds_ratio works as expected using or.glm and clogit", {
   )
   expect_equal(
     res$or,
-    setNames(c(0.8484848, 0.3811997, 1.8797355), c("or.est", "lwr.ci", "upr.ci")),
+    tibble::tibble(
+      or.est = 0.8484848,
+      lwr.ci = 0.3811997,
+      upr.ci = 1.8797355
+    ),
     tolerance = 0.0001
   )
   expect_equal(
     res$strata_or,
-    data.frame(
-      or.est = 0.7592608,
-      lwr.ci = 0.335024,
-      upr.ci = 1.720704,
-      row.names = "TRT"
+    tibble::tibble(
+      data.frame(
+        or.est = 0.7592608,
+        lwr.ci = 0.335024,
+        upr.ci = 1.720704,
+        row.names = "TRT"
+      )
     ),
     tolerance = 0.0001
   )
