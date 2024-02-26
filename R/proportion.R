@@ -115,7 +115,7 @@ s_propci <- function(data,
   est_res <- object$data %>%
     count(!!sym(by), !!sym(var)) %>%
     add_count(!!sym(by), wt = .data$n, name = "tot") %>%
-    dplyr::filter(!!sym(var) == object$event) %>%
+    filter(!!sym(var) == object$event) %>%
     split(as.formula(paste("~", by))) %>%
     purrr::map(function(x) {
       tibble::tibble(
@@ -134,7 +134,7 @@ s_propci <- function(data,
     object$data %>%
       count(!!sym(by), !!sym(var)) %>%
       add_count(!!sym(by), wt = .data$n, name = "tot") %>%
-      dplyr::filter(!!sym(var) == object$event) %>%
+      filter(!!sym(var) == object$event) %>%
       tidyr::pivot_wider(names_from = by, values_from = c("n", "tot")) %>%
       split(as.formula(paste("~", var))) %>%
       purrr::map(function(x) {
@@ -257,7 +257,7 @@ s_odds_ratio <- function(data,
   } else {
     object$data %>%
       count(!!sym(by), !!sym(var)) %>%
-      dplyr::arrange(!!sym(var) == object$event, !!sym(by)) %>%
+      arrange(!!sym(var) == object$event, !!sym(by)) %>%
       tidyr::pivot_wider(names_from = var, values_from = "n") %>%
       tibble::column_to_rownames(var = by) %>%
       as.matrix() %>%

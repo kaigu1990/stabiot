@@ -19,6 +19,7 @@ Imports:
     dplyr,
     emmeans,
     lifecycle,
+    lubridate,
     magrittr,
     purrr,
     rlang,

@@ -7,14 +7,25 @@
 #' @import checkmate
 #' @importFrom lifecycle deprecated
 #' @importFrom stats pbeta rbinom confint as.formula setNames coef
-#' @importFrom dplyr count add_count group_by
+#' @importFrom dplyr add_count arrange case_when count distinct filter group_by
+#'  left_join mutate row_number select ungroup
 #' @importFrom rlang sym := .data
 #' @importFrom survival coxph Surv strata
+#' @importFrom lubridate ymd days
 NULL
 
 .onLoad <- function(libname, pkgname) {
   op <- options()
   op.stabiot <- list(
+    stabiot.aval.mapping = tibble::tribble(
+      ~avalc_temp,           ~aval_temp,
+      "CR",             1,
+      "PR",             2,
+      "SD",             3,
+      # "NON-CR/NON-PD",  4,
+      "PD",             4,
+      "NE",             5
+    ),
     stabiot.precision.default = tibble::tribble(
       ~stat,     ~extra,
       "N",       0,
