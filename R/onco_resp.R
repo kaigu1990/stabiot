@@ -59,7 +59,7 @@
 #' 5. Set to not estimable (NE) if:
 #'    - there is at least one CR, PR, SD, NE.
 #'
-#' After the previous steps, select the best one using the order 'CR>PR>SD>PD>NE'
+#' After executing the previous steps, select the best one using the order 'CR>PR>SD>PD>NE'
 #' for each subject. If the BOR is not unique, the first one (based on ADT) is selected.
 #'
 #' @return
@@ -95,13 +95,13 @@
 #'   "7",      "2020-02-02", "2020-04-01", "NE",
 #'   "8",      "2020-02-01", "2020-02-16", "PD"
 #' ) %>%
-#'   mutate(
-#'     ADT = ymd(ADTC),
-#'     TRTSDT = ymd(TRTSDTC),
+#'   dplyr::mutate(
+#'     ADT = lubridate::ymd(ADTC),
+#'     TRTSDT = lubridate::ymd(TRTSDTC),
 #'     PARAMCD = "OVR",
 #'     PARAM = "Overall Response by Investigator"
 #'   ) %>%
-#'   select(-TRTSDTC)
+#'   dplyr::select(-TRTSDTC)
 #'
 #' # Derive BOR without confirmation.
 #' derive_bor(data = adrs)
@@ -126,7 +126,8 @@ derive_bor <- function(data,
   rs <- if (spec_date == "pd_date") {
     data %>%
       group_by(!!sym(unique_id)) %>%
-      filter(row_number() <= match("PD", AVALC) | all(AVALC != "PD"))
+      filter(row_number() <= match("PD", AVALC) | all(AVALC != "PD")) %>%
+      ungroup()
   } else {
     data
   }
@@ -142,20 +143,20 @@ derive_bor <- function(data,
         )
       ) %>%
       left_join(aval_map, by = c("AVALC" = "avalc_temp")) %>%
-      mutate(AVAL = aval_temp) %>%
+      mutate(AVAL = .data$aval_temp) %>%
       arrange(!!sym(unique_id), AVAL, ADT) %>%
       # select the best and first one as the best overall response.
-      distinct(USUBJID, .keep_all = TRUE) %>%
+      distinct(!!sym(unique_id), .keep_all = TRUE) %>%
       mutate(
         PARAMCD = "BOR",
         PARAM = "Best Overall Response"
       ) %>%
-      select(-c(avalc_temp, aval_temp))
+      select(-c("avalc_temp", "aval_temp"))
   } else {
     conf_cr <- rs %>%
       left_join(
-        select(rs, !!sym(unique_id), ADT, AVALC),
-        by = "USUBJID", relationship = "many-to-many"
+        select(rs, !!sym(unique_id), "ADT", "AVALC"),
+        by = unique_id, relationship = "many-to-many"
       ) %>%
       # keep the joined observations are after the original observations (e.g. AVALC.x)
       filter(AVALC.x == "CR" & ADT.y > ADT.x) %>%
@@ -165,7 +166,7 @@ derive_bor <- function(data,
       ) %>%
       group_by(!!sym(unique_id)) %>%
       filter(
-        row_number() <= min(match(TRUE, flag))
+        row_number() <= min(match(TRUE, .data$flag))
       ) %>%
       # define how many NE and which responses can be acceptable between these two assessments.
       filter(sum(AVALC.y == "NE") <= max_ne & all(AVALC.y %in% c("CR", "NE"))) %>%
@@ -179,8 +180,8 @@ derive_bor <- function(data,
 
     conf_pr <- rs %>%
       left_join(
-        select(rs, !!sym(unique_id), ADT, AVALC),
-        by = "USUBJID", relationship = "many-to-many"
+        select(rs, !!sym(unique_id), "ADT", "AVALC"),
+        by = unique_id, relationship = "many-to-many"
       ) %>%
       filter(AVALC.x == "PR" & ADT.y > ADT.x) %>%
       mutate(
@@ -188,7 +189,7 @@ derive_bor <- function(data,
       ) %>%
       group_by(!!sym(unique_id)) %>%
       filter(
-        row_number() <= min(match(TRUE, flag))
+        row_number() <= min(match(TRUE, .data$flag))
       ) %>%
       filter(sum(AVALC.y == "NE") <= max_ne & all(AVALC.y %in% c("CR", "PR", "NE"))) %>%
       ungroup() %>%
@@ -203,19 +204,19 @@ derive_bor <- function(data,
       # CR, PR and SD can be considered as SD that occurs at least 28 days after treatment start.
       filter(AVALC %in% c("CR", "PR", "SD") &
         ADT >= !!sym(ref_date) + days(ref_start_window)) %>%
-      distinct(USUBJID, .keep_all = TRUE) %>%
+      distinct(!!sym(unique_id), .keep_all = TRUE) %>%
       mutate(AVALC = "SD") %>%
       select(names(rs))
 
     pd <- rs %>%
       filter(AVALC == "PD") %>%
-      distinct(USUBJID, .keep_all = TRUE) %>%
+      distinct(!!sym(unique_id), .keep_all = TRUE) %>%
       mutate(AVALC = "PD") %>%
       select(names(rs))
 
     ne <- rs %>%
       filter(AVALC %in% c("CR", "PR", "SD", "NE")) %>%
-      distinct(USUBJID, .keep_all = TRUE) %>%
+      distinct(!!sym(unique_id), .keep_all = TRUE) %>%
       mutate(AVALC = "NE") %>%
       select(names(rs))
 
@@ -224,13 +225,13 @@ derive_bor <- function(data,
     ) %>%
       left_join(aval_map, by = c("AVALC" = "avalc_temp")) %>%
       mutate(
-        AVAL = aval_temp,
+        AVAL = .data$aval_temp,
         PARAMCD = "CBOR",
         PARAM = "Confirmed Best Overall Response"
       ) %>%
       arrange(!!sym(unique_id), AVAL, ADT) %>%
-      distinct(USUBJID, .keep_all = TRUE) %>%
-      select(-aval_temp)
+      distinct(!!sym(unique_id), .keep_all = TRUE) %>%
+      select(-"aval_temp")
   }
 
   bor_res

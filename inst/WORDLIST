@@ -1,5 +1,10 @@
+ADRS
+ADT
 ADaM
 ANCOVA
+AVAL
+AVALC
+BOR
 BinomCI
 BinomDiffCI
 CDISC
@@ -12,6 +17,7 @@ MMRM
 OddsRatio
 PN
 Pre
+RECIST
 TRT
 clogit
 magrittr

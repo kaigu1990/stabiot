@@ -14,6 +14,10 @@
 #' @importFrom lubridate ymd days
 NULL
 
+utils::globalVariables(c(
+  "ADT", "ADT.x", "ADT.y", "AVAL", "AVALC", "AVALC.x", "AVALC.y", "."
+))
+
 .onLoad <- function(libname, pkgname) {
   op <- options()
   op.stabiot <- list(

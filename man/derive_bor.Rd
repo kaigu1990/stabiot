@@ -100,7 +100,7 @@ Confirmation is required for BOR:
 }
 }
 
-After the previous steps, select the best one using the order 'CR>PR>SD>PD>NE'
+After executing the previous steps, select the best one using the order 'CR>PR>SD>PD>NE'
 for each subject. If the BOR is not unique, the first one (based on ADT) is selected.
 }
 \examples{
@@ -131,13 +131,13 @@ adrs <- tibble::tribble(
   "7",      "2020-02-02", "2020-04-01", "NE",
   "8",      "2020-02-01", "2020-02-16", "PD"
 ) \%>\%
-  mutate(
-    ADT = ymd(ADTC),
-    TRTSDT = ymd(TRTSDTC),
+  dplyr::mutate(
+    ADT = lubridate::ymd(ADTC),
+    TRTSDT = lubridate::ymd(TRTSDTC),
     PARAMCD = "OVR",
     PARAM = "Overall Response by Investigator"
   ) \%>\%
-  select(-TRTSDTC)
+  dplyr::select(-TRTSDTC)
 
 # Derive BOR without confirmation.
 derive_bor(data = adrs)
