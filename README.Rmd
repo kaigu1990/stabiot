@@ -19,19 +19,17 @@ knitr::opts_chunk$set(
 [![R-CMD-check](https://github.com/kaigu1990/stabiot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/kaigu1990/stabiot/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-The goal of `stabiot` is to assist statisticians and programmers in using R functions 
-and methods to oversee the outputs often produced by SAS from vendors in clinical 
+The goal of `stabiot` is to assist statisticians and statistical programmers in using R functions and methods to oversee the outputs produced by SAS from outsourcing in clinical 
 trials. The data sets would be ADaM format preferably, but they do not have to 
-follow the CDISC standard.
+strictly follow the CDISC standards.
 
-In order to ensure the quality and accuracy of the results, I prefer to wrap mature 
-R package rather than rebuild the statistical methods. For now the completed sections 
-are listed as shown below.
+To guarantee accurate results, I prefer to wrap mature R package rather than rebuild statistical methods. For present, the completed sections are listed below.
 
 - Simulation of sample size determination by Bayesian.
 - Summarize Least-squares Means from models, such as ANCOVA and MMRM.
-- Computing response rate, odds ratio with or without stratification, and corresponding 
+- Compute response rate, odds ratio with or without stratification, and corresponding 
 confidence interval.
+- Derive best overall response (confirmed or not confirmed BOR) per RECIST 1.1
 
 ## Installation
 
