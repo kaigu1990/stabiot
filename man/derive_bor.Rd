@@ -103,6 +103,7 @@ Confirmation is required for BOR:
 After executing the previous steps, select the best one using the order 'CR>PR>SD>PD>NE'
 for each subject. If the BOR is not unique, the first one (based on ADT) is selected.
 }
+
 \note{
 \itemize{
 \item The \code{ref_start_window} refers to assessment date (ADT) minus \code{ref_date}. For
@@ -115,6 +116,7 @@ should be equal to or greater than 28 days. And this argument is used in confirm
 of CR/PR.
 }
 }
+
 \examples{
 # This example is referred from `admiral::event_joined`.
 adrs <- tibble::tribble(
