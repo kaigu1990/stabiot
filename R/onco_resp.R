@@ -62,6 +62,16 @@
 #' After executing the previous steps, select the best one using the order 'CR>PR>SD>PD>NE'
 #' for each subject. If the BOR is not unique, the first one (based on ADT) is selected.
 #'
+#' @note
+#' - The `ref_start_window` refers to assessment date (ADT) minus `ref_date`. For
+#' example, `ref_start_window = 28` that means ADT minus TRTSDT should be equal to
+#' or greater than 28 days. And this argument is only used in non-confirmatory/confirmatory
+#' of SD.
+#' - The `ref_interval` refers to confirmatory assessment date minus assessment date.
+#' For example, `ref_interval = 28` that means subsequent CR date minus prior CR
+#' should be equal to or greater than 28 days. And this argument is used in confirmatory
+#' of CR/PR.
+#'
 #' @return
 #' A data frame with a new parameter for confirmed or not confirmed best overall response.
 #'
@@ -120,6 +130,17 @@ derive_bor <- function(data,
                        ref_interval = 28,
                        max_ne = 1,
                        confirm = FALSE) {
+  assert_class(data, "data.frame")
+  assert_subset(unique_id, names(data), empty.ok = FALSE)
+  assert_class(aval_map, "data.frame")
+  assert_subset(names(aval_map), c("avalc_temp", "aval_temp"))
+  assert_string(spec_date, null.ok = TRUE)
+  assert_date(data[[ref_date]])
+  assert_number(ref_start_window, lower = 0)
+  assert_number(ref_interval, lower = 0)
+  assert_number(max_ne, lower = 0)
+  assert_logical(confirm)
+
   data <- data %>%
     arrange(!!sym(unique_id), ADT)
 

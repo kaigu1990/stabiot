@@ -103,6 +103,18 @@ Confirmation is required for BOR:
 After executing the previous steps, select the best one using the order 'CR>PR>SD>PD>NE'
 for each subject. If the BOR is not unique, the first one (based on ADT) is selected.
 }
+\note{
+\itemize{
+\item The \code{ref_start_window} refers to assessment date (ADT) minus \code{ref_date}. For
+example, \code{ref_start_window = 28} that means ADT minus TRTSDT should be equal to
+or greater than 28 days. And this argument is only used in non-confirmatory/confirmatory
+of SD.
+\item The \code{ref_interval} refers to confirmatory assessment date minus assessment date.
+For example, \code{ref_interval = 28} that means subsequent CR date minus prior CR
+should be equal to or greater than 28 days. And this argument is used in confirmatory
+of CR/PR.
+}
+}
 \examples{
 # This example is referred from `admiral::event_joined`.
 adrs <- tibble::tribble(

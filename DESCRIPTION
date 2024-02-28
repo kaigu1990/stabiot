@@ -6,7 +6,7 @@ Authors@R: c(
     person("Kai", "Gu", , "gukai1212@163.com", role = c("aut", "cre", "cph"))
   )
 Maintainer: Kai Gu <gukai1212@163.com>
-Description: Provides common statistical analysis for oversighting process in 
+Description: Provides common statistical analysis for oversight process in the
     clinical trials of biotech, makes the outputs can be compared with SAS results.
 License: GPL (>= 3)
 Encoding: UTF-8
