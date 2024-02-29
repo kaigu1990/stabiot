@@ -22,13 +22,13 @@ utils::globalVariables(c(
   op <- options()
   op.stabiot <- list(
     stabiot.aval.mapping = tibble::tribble(
-      ~avalc_temp,           ~aval_temp,
-      "CR",             1,
-      "PR",             2,
-      "SD",             3,
+      ~avalc_temp, ~aval_temp,
+      "CR", 1,
+      "PR", 2,
+      "SD", 3,
       # "NON-CR/NON-PD",  4,
-      "PD",             4,
-      "NE",             5
+      "PD", 4,
+      "NE", 5
     ),
     stabiot.precision.default = tibble::tribble(
       ~stat,     ~extra,

@@ -140,7 +140,7 @@ derive_bor <- function(data,
   assert_number(ref_interval, lower = 0)
   assert_number(max_ne, lower = 0)
   assert_logical(confirm)
-  
+
   data <- data %>%
     arrange(!!sym(unique_id), ADT)
 
