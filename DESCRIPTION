@@ -14,6 +14,7 @@ LazyData: true
 Depends: 
     R (>= 3.6)
 Imports:
+    broom,
     checkmate,
     DescTools,
     dplyr,
@@ -25,6 +26,7 @@ Imports:
     rlang,
     stats,
     survival,
+    survminer,
     tibble,
     tidyr
 Suggests: 

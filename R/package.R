@@ -6,7 +6,7 @@
 
 #' @import checkmate
 #' @importFrom lifecycle deprecated
-#' @importFrom stats pbeta rbinom confint as.formula setNames coef
+#' @importFrom stats pbeta rbinom confint as.formula setNames coef quantile
 #' @importFrom dplyr add_count arrange case_when count distinct filter group_by
 #'  left_join mutate row_number select ungroup
 #' @importFrom rlang sym := .data
