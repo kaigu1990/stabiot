@@ -24,6 +24,7 @@
 #' @param pval_method (`string`)\cr method of comparing survival curves. Default is
 #'  "log-rank", others options can see [survminer::surv_pvalue()].
 #' @param pairwise (`logical`)\cr whether to conduct the pairwise comparison.
+#' @param ... other arguments to be passed to [survival::survfit()].
 #'
 #' @return
 #' An object of class `s_survival` is a list contains several summary tables
@@ -101,7 +102,8 @@ s_get_survfit <- function(data,
                           conf_level = 0.95,
                           strata = NULL,
                           pval_method = "log-rank",
-                          pairwise = FALSE) {
+                          pairwise = FALSE,
+                          ...) {
   assert_class(data, "data.frame")
   assert_formula(formula)
   assert_numeric(quantile, lower = 0, upper = 1)
@@ -116,7 +118,8 @@ s_get_survfit <- function(data,
     data = data,
     formula = formula,
     conf.int = conf_level,
-    conf.type = conf_type
+    conf.type = conf_type,
+    ...
   )
 
   grps <- if (is.null(km_fit$strata)) {
@@ -278,7 +281,7 @@ s_get_survfit <- function(data,
         rate = surv_rate_diff
       ),
       params = list(
-        formula = formula,
+        formula = format(c(formula, formula_strata)),
         quantile = quantile,
         time_point = time_point,
         conf_type = conf_type,
@@ -289,5 +292,121 @@ s_get_survfit <- function(data,
       )
     ),
     class = "s_survival"
+  )
+}
+
+
+# s_get_coxph ----
+
+#' Summarize Cox Proportional Hazards Regression Model
+#'
+#' @description `r lifecycle::badge("experimental")`
+#'
+#' This function summarizes `coxph` model with or without stratification, and provides
+#' hazards ratio, confidence interval and p-value for common clinical survival analysis.
+#'
+#' @param data (`data.frame`)\cr a data frame as input.
+#' @param formula (`formula`)\cr a formula with survival object.
+#' @param ties (`string`)\cr string specifying the the method for tie handling,
+#'  default is efron. See more details in [survival::coxph()].
+#' @param conf_level (`numeric`)\cr significance level for a two-side confidence
+#'  interval on survival curve, default is 0.95.
+#' @param strata (`character`)\cr a character vector used for stratification.
+#' @param pval_method (`string`)\cr string specifying the the method for tie handling,
+#'  default is to present all three methods (Likelihood ratio test, Wald test and
+#'  Score (logrank) test).
+#' @param ... other arguments to be passed to [survival::coxph()].
+#'
+#' @return
+#' An object of class `s_coxph` is a list contains hazards ratio and p-value tables.
+#'
+#' @export
+#'
+#' @examples
+#' data("whas500")
+#'
+#' # reorder the grouping variable
+#' dat <- whas500 %>%
+#'   mutate(
+#'     AFB = factor(AFB, levels = c(1, 0))
+#'   )
+#' s_get_coxph(data = dat, formula = Surv(LENFOL, FSTAT) ~ AFB)
+#'
+#' # specify the stratified log-rank test
+#' s_get_coxph(
+#'   data = dat,
+#'   formula = Surv(LENFOL, FSTAT) ~ AFB,
+#'   strata = c("AGE", "GENDER")
+#' )
+#'
+#' # dummy three groups
+#' set.seed(123)
+#' subj <- sample(dat$ID, 100)
+#' dat2 <- whas500 %>%
+#'   mutate(
+#'     AFB = case_when(
+#'       ID %in% subj ~ 2,
+#'       TRUE ~ AFB
+#'     ),
+#'     AFB = factor(AFB, levels = c(1, 2, 0))
+#'   )
+#' s_get_coxph(data = dat2, formula = Surv(LENFOL, FSTAT) ~ AFB)
+#'
+s_get_coxph <- function(data,
+                        formula,
+                        ties = c("efron", "breslow", "exact"),
+                        conf_level = 0.95,
+                        strata = NULL,
+                        pval_method = c("all", "log", "sc", "wald"),
+                        ...) {
+  assert_class(data, "data.frame")
+  assert_formula(formula)
+  assert_number(conf_level, lower = 0, upper = 1)
+  assert_subset(strata, names(data))
+  ties <- match.arg(ties, c("efron", "breslow", "exact"), several.ok = FALSE)
+  pval_method <- match.arg(pval_method, c("all", "log", "sc", "wald"), several.ok = FALSE)
+
+  formula <- if (!is.null(strata)) {
+    as.formula(
+      paste0(format(formula), " + strata(", paste(strata, collapse = ", "), ")")
+    )
+  } else {
+    formula
+  }
+
+  cox_fit <- survival::coxph(formula, data = data, ties = ties, ...)
+  cox_ss <- summary(cox_fit, conf.int = conf_level, extend = TRUE)
+
+  pval_name <- switch(pval_method,
+    all = c("logtest", "sctest", "waldtest"),
+    log = "logtest",
+    sc = "sctest",
+    wald = "waldtest"
+  )
+  pval_tb <- cox_ss[pval_name] %>%
+    dplyr::bind_rows(.id = "method")
+
+  hr_tb <- tibble::tibble(
+    variable = row.names(cox_ss$conf.int),
+    n = cox_ss$n,
+    event = cox_ss$nevent,
+    hr = cox_ss$conf.int[, 1],
+    lower = cox_ss$conf.int[, 3],
+    upper = cox_ss$conf.int[, 4]
+  )
+
+  structure(
+    list(
+      hr = hr_tb,
+      pval = pval_tb,
+      params = list(
+        formula = format(formula),
+        ties = ties,
+        conf_level = conf_level,
+        strata = strata,
+        pval_method = pval_method
+      )
+    ),
+    class = "s_coxph"
   )
 }

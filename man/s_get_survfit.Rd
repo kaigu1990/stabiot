@@ -13,7 +13,8 @@ s_get_survfit(
   conf_level = 0.95,
   strata = NULL,
   pval_method = "log-rank",
-  pairwise = FALSE
+  pairwise = FALSE,
+  ...
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ interval on survival curve, default is 0.95.}
 "log-rank", others options can see \code{\link[survminer:surv_pvalue]{survminer::surv_pvalue()}}.}
 
 \item{pairwise}{(\code{logical})\cr whether to conduct the pairwise comparison.}
+
+\item{...}{other arguments to be passed to \code{\link[survival:survfit]{survival::survfit()}}.}
 }
 \value{
 An object of class \code{s_survival} is a list contains several summary tables
