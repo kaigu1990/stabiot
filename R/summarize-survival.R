@@ -21,8 +21,9 @@
 #' @param conf_level (`numeric`)\cr significance level for a two-side confidence
 #'  interval on survival curve, default is 0.95.
 #' @param strata (`character`)\cr a character vector used for stratification.
-#' @param pval_method (`string`)\cr method of comparing survival curves. Default is
-#'  "log-rank", others options can see [survminer::surv_pvalue()].
+#' @param rho (`number`)\cr a scalar parameter that controls the method
+#'  of comparing survival curves. Default is 0 that is log-rank , others options
+#'  can see [survival::survdiff()].
 #' @param pairwise (`logical`)\cr whether to conduct the pairwise comparison.
 #' @param ... other arguments to be passed to [survival::survfit()].
 #'
@@ -37,7 +38,7 @@
 #'
 #' @note
 #' This function mainly wraps `survival::survfit()` to compute the survival
-#' estimates, and `survminer::surv_pvalue()` to compute the p-value of comparing
+#' estimates, and `survival::survdiff()` to compute the p-value of comparing
 #' survival curves. The SE and p-value of difference rate are simply computed
 #' using normal distribution and Z statistic.
 #'
@@ -101,7 +102,7 @@ s_get_survfit <- function(data,
                           conf_type = c("log-log", "log", "plain"),
                           conf_level = 0.95,
                           strata = NULL,
-                          pval_method = "log-rank",
+                          rho = 0,
                           pairwise = FALSE,
                           ...) {
   assert_class(data, "data.frame")
@@ -110,7 +111,7 @@ s_get_survfit <- function(data,
   assert_numeric(time_point, null.ok = TRUE)
   assert_number(conf_level, lower = 0, upper = 1)
   assert_subset(strata, names(data))
-  assert_string(pval_method)
+  assert_number(rho)
   assert_logical(pairwise)
   conf_type <- match.arg(conf_type, c("log-log", "log", "plain"), several.ok = FALSE)
 
@@ -155,38 +156,6 @@ s_get_survfit <- function(data,
       select(group, n = n.start, events, median, lower = `0.95LCL`, upper = `0.95UCL`)
   }
 
-  # test survival curves
-  surv_test <- if (!is.null(km_fit$strata)) {
-    if (is.null(strata)) {
-      km_no_strata <- do.call(
-        survival::survfit,
-        args = list(
-          data = data,
-          formula = formula,
-          conf.int = conf_level,
-          conf.type = conf_type
-        )
-      )
-      survminer::surv_pvalue(km_no_strata, data = data, method = pval_method) %>%
-        tibble::as_tibble()
-    } else {
-      formula_strata <- as.formula(
-        paste0(format(formula), " + strata(", paste(strata, collapse = ", "), ")")
-      )
-      km_strata <- do.call(
-        survival::survfit,
-        args = list(
-          data = data,
-          formula = formula_strata,
-          conf.int = conf_level,
-          conf.type = conf_type
-        )
-      )
-      survminer::surv_pvalue(km_strata, data = data, method = pval_method) %>%
-        tibble::as_tibble()
-    }
-  }
-
   # overall survival rate
   cols <- c("time", "n.risk", "n.event", "n.censor", "surv", "std.err", "lower", "upper")
   overall <- summary(km_fit)
@@ -194,7 +163,7 @@ s_get_survfit <- function(data,
     tibble::as_tibble(overall[cols]) %>%
       mutate(group = grps)
   } else {
-    evt_ind <- which(overall$time < lag(overall$time)) - 1
+    evt_ind <- which(overall$time < dplyr::lag(overall$time)) - 1
     evt_ind <- c(evt_ind[1], diff(c(evt_ind, length(overall$time))))
     tibble::as_tibble(overall[cols]) %>%
       mutate(group = rep(grps, times = evt_ind))
@@ -243,6 +212,28 @@ s_get_survfit <- function(data,
       purrr::list_rbind()
   }
 
+  # test survival curves
+  surv_test <- if (!is.null(km_fit$strata)) {
+    survdiff <- h_pairwise_survdiff(
+      formula = formula,
+      strata = strata,
+      data = data,
+    )
+    if (!pairwise) {
+      tibble::tibble(
+        comparsion = paste(bylist[,1], bylist[,2], sep = " vs. "),
+        method = survdiff$method,
+        pval = as.numeric(na.omit(survdiff$p.value))
+      )
+    } else {
+      tibble::tibble(
+        comparsion = paste(bylist[,1], bylist[,2], sep = " vs. "),
+        method = survdiff$method,
+        pval = as.numeric(survdiff$p.value)[!is.na(as.numeric(survdiff$p.value))]
+      )
+    }
+  }
+
   # survival range in overall time
   range_evt <- surv_overall_rate %>%
     filter(n.event != 0) %>%
@@ -265,7 +256,8 @@ s_get_survfit <- function(data,
     mutate(
       min = min(event_min, censor_min, na.rm = TRUE),
       max = max(event_max, censor_max, na.rm = TRUE)
-    )
+    ) %>%
+    ungroup()
 
   structure(
     list(
@@ -281,13 +273,13 @@ s_get_survfit <- function(data,
         rate = surv_rate_diff
       ),
       params = list(
-        formula = format(c(formula, formula_strata)),
+        formula = format(formula),
         quantile = quantile,
         time_point = time_point,
         conf_type = conf_type,
         conf_level = conf_level,
         strata = strata,
-        pval_method = pval_method,
+        rho = rho,
         pairwise = pairwise
       )
     ),
