@@ -5,14 +5,16 @@
 "_PACKAGE"
 
 #' @import checkmate
-#' @importFrom magrittr %>% set_colnames
+#' @importFrom magrittr set_colnames
 #' @importFrom lifecycle deprecated
 #' @importFrom stats pbeta rbinom confint as.formula setNames coef quantile
 #' @importFrom dplyr add_count arrange case_when count distinct filter full_join
 #'  group_by left_join mutate row_number rowwise select summarise ungroup
 #' @importFrom rlang sym := .data
-#' @importFrom survival coxph Surv strata
+#' @importFrom survival coxph strata
+#' @importFrom survminer pairwise_survdiff
 #' @importFrom lubridate ymd days
+#' @importFrom utils combn
 NULL
 
 utils::globalVariables(c(

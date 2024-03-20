@@ -69,8 +69,8 @@ time-point survival rates and difference of survival rates.
 \section{Functions}{
 \itemize{
 \item \code{h_pairwise_survdiff()}: a modified version of \code{\link[survminer:pairwise_survdiff]{survminer::pairwise_survdiff()}}
-that calculates the pairwise comparisons of survival curves when the stratification
-is specified.
+that can calculate the pairwise comparisons of survival curves regardless of
+whether stratification is given.
 
 }}
 \note{
@@ -87,7 +87,7 @@ data("whas500")
 
 # reorder the grouping variable
 dat <- whas500 \%>\%
-  mutate(
+  dplyr::mutate(
     AFB = factor(AFB, levels = c(1, 0))
   )
 
@@ -115,8 +115,8 @@ s_get_survfit(
 set.seed(123)
 subj <- sample(dat$ID, 100)
 dat2 <- whas500 \%>\%
-  mutate(
-    AFB = case_when(
+  dplyr::mutate(
+    AFB = dplyr::case_when(
       ID \%in\% subj ~ 2,
       TRUE ~ AFB
     ),

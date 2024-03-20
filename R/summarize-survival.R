@@ -52,7 +52,7 @@
 #'
 #' # reorder the grouping variable
 #' dat <- whas500 %>%
-#'   mutate(
+#'   dplyr::mutate(
 #'     AFB = factor(AFB, levels = c(1, 0))
 #'   )
 #'
@@ -80,8 +80,8 @@
 #' set.seed(123)
 #' subj <- sample(dat$ID, 100)
 #' dat2 <- whas500 %>%
-#'   mutate(
-#'     AFB = case_when(
+#'   dplyr::mutate(
+#'     AFB = dplyr::case_when(
 #'       ID %in% subj ~ 2,
 #'       TRUE ~ AFB
 #'     ),
@@ -115,6 +115,7 @@ s_get_survfit <- function(data,
   assert_logical(pairwise)
   conf_type <- match.arg(conf_type, c("log-log", "log", "plain"), several.ok = FALSE)
 
+  formula <- as.formula(formula)
   km_fit <- survival::survfit(
     data = data,
     formula = formula,
@@ -144,16 +145,16 @@ s_get_survfit <- function(data,
       type = rep(c("time", "lower", "upper"), each = length(quantile) * length(grps)),
       quantile = rep(quantile * 100, each = length(grps), times = 3)
     ) %>%
-    tidyr::pivot_wider(names_from = type, values_from = value)
+    tidyr::pivot_wider(names_from = "type", values_from = "value")
 
   # median survival time
   surv_tb <- if (is.null(km_fit$strata)) {
     broom::glance(km_fit) %>%
-      select(n = nobs, events, median, lower = conf.low, upper = conf.high)
+      select(n = "nobs", "events", "median", lower = "conf.low", upper = "conf.high")
   } else {
     tibble::as_tibble(summary(km_fit)$table) %>%
       mutate(group = grps) %>%
-      select(group, n = n.start, events, median, lower = `0.95LCL`, upper = `0.95UCL`)
+      select("group", n = "n.start", "events", "median", lower = "0.95LCL", upper = "0.95UCL")
   }
 
   # overall survival rate
@@ -175,7 +176,7 @@ s_get_survfit <- function(data,
       tibble::as_tibble() %>%
       mutate(
         group = rep(grps, each = length(time_point)),
-        std.err = ifelse(n.risk == 0, NA, std.err)
+        std.err = ifelse(.data$n.risk == 0, NA, .data$std.err)
       )
   }
 
@@ -190,7 +191,7 @@ s_get_survfit <- function(data,
   surv_rate_diff <- if (!is.null(time_point) & !is.null(bylist)) {
     split(bylist, 1:nrow(bylist)) %>%
       purrr::map(function(x) {
-        filter(surv_tp_rate, group %in% x) %>%
+        filter(surv_tp_rate, .data$group %in% x) %>%
           split(time_point) %>%
           purrr::map(function(x) {
             tibble::tibble(
@@ -198,12 +199,12 @@ s_get_survfit <- function(data,
               time = unique(x$time),
               surv.diff = diff(x$surv),
               std.err = sqrt(sum(x$std.err^2)),
-              lower = surv.diff - qnorm(1 - 0.05 / 2) * std.err,
-              upper = surv.diff + qnorm(1 - 0.05 / 2) * std.err,
-              pval = if (is.na(std.err)) {
+              lower = .data$surv.diff - stats::qnorm(1 - 0.05 / 2) * .data$std.err,
+              upper = .data$surv.diff + stats::qnorm(1 - 0.05 / 2) * .data$std.err,
+              pval = if (is.na(.data$std.err)) {
                 NA
               } else {
-                2 * (1 - stats::pnorm(abs(surv.diff) / std.err))
+                2 * (1 - stats::pnorm(abs(.data$surv.diff) / .data$std.err))
               }
             )
           }) %>%
@@ -217,45 +218,39 @@ s_get_survfit <- function(data,
     survdiff <- h_pairwise_survdiff(
       formula = formula,
       strata = strata,
-      data = data,
+      data = data
     )
-    if (!pairwise) {
-      tibble::tibble(
-        comparsion = paste(bylist[,1], bylist[,2], sep = " vs. "),
-        method = survdiff$method,
-        pval = as.numeric(na.omit(survdiff$p.value))
-      )
-    } else {
-      tibble::tibble(
-        comparsion = paste(bylist[,1], bylist[,2], sep = " vs. "),
-        method = survdiff$method,
-        pval = as.numeric(survdiff$p.value)[!is.na(as.numeric(survdiff$p.value))]
-      )
-    }
+    tibble::tibble(
+      comparsion = paste(bylist[, 1], bylist[, 2], sep = " vs. "),
+      method = survdiff$method,
+      pval = as.numeric(mapply(function(x, y) {
+        survdiff$p.value[x, y]
+      }, bylist[, 2], bylist[, 1]))
+    )
   }
 
   # survival range in overall time
   range_evt <- surv_overall_rate %>%
-    filter(n.event != 0) %>%
-    group_by(group) %>%
+    filter(.data$n.event != 0) %>%
+    group_by(.data$group) %>%
     summarise(
-      event_min = min(time, na.rm = TRUE),
-      event_max = max(time, na.rm = TRUE),
+      event_min = min(.data$time, na.rm = TRUE),
+      event_max = max(.data$time, na.rm = TRUE),
       .groups = "drop"
     )
   range_cnsr <- surv_overall_rate %>%
-    filter(n.censor != 0) %>%
-    group_by(group) %>%
+    filter(.data$n.censor != 0) %>%
+    group_by(.data$group) %>%
     summarise(
-      censor_min = min(time, na.rm = TRUE),
-      censor_max = max(time, na.rm = TRUE),
+      censor_min = min(.data$time, na.rm = TRUE),
+      censor_max = max(.data$time, na.rm = TRUE),
       .groups = "drop"
     )
   range_tb <- full_join(range_evt, range_cnsr, by = c("group")) %>%
     rowwise() %>%
     mutate(
-      min = min(event_min, censor_min, na.rm = TRUE),
-      max = max(event_max, censor_max, na.rm = TRUE)
+      min = min(.data$event_min, .data$censor_min, na.rm = TRUE),
+      max = max(.data$event_max, .data$censor_max, na.rm = TRUE)
     ) %>%
     ungroup()
 
@@ -307,6 +302,7 @@ s_get_survfit <- function(data,
 #' @param pval_method (`string`)\cr string specifying the the method for tie handling,
 #'  default is to present all three methods (Likelihood ratio test, Wald test and
 #'  Score (logrank) test).
+#' @param pairwise (`logical`)\cr whether to conduct the pairwise comparison.
 #' @param ... other arguments to be passed to [survival::coxph()].
 #'
 #' @return
@@ -319,7 +315,7 @@ s_get_survfit <- function(data,
 #'
 #' # reorder the grouping variable
 #' dat <- whas500 %>%
-#'   mutate(
+#'   dplyr::mutate(
 #'     AFB = factor(AFB, levels = c(1, 0))
 #'   )
 #' s_get_coxph(data = dat, formula = Surv(LENFOL, FSTAT) ~ AFB)
@@ -335,21 +331,21 @@ s_get_survfit <- function(data,
 #' set.seed(123)
 #' subj <- sample(dat$ID, 100)
 #' dat2 <- whas500 %>%
-#'   mutate(
-#'     AFB = case_when(
+#'   dplyr::mutate(
+#'     AFB = dplyr::case_when(
 #'       ID %in% subj ~ 2,
 #'       TRUE ~ AFB
 #'     ),
 #'     AFB = factor(AFB, levels = c(1, 2, 0))
 #'   )
 #' s_get_coxph(data = dat2, formula = Surv(LENFOL, FSTAT) ~ AFB)
-#'
 s_get_coxph <- function(data,
                         formula,
                         ties = c("efron", "breslow", "exact"),
                         conf_level = 0.95,
                         strata = NULL,
                         pval_method = c("all", "log", "sc", "wald"),
+                        pairwise = FALSE,
                         ...) {
   assert_class(data, "data.frame")
   assert_formula(formula)
@@ -358,34 +354,70 @@ s_get_coxph <- function(data,
   ties <- match.arg(ties, c("efron", "breslow", "exact"), several.ok = FALSE)
   pval_method <- match.arg(pval_method, c("all", "log", "sc", "wald"), several.ok = FALSE)
 
-  formula <- if (!is.null(strata)) {
-    as.formula(
-      paste0(format(formula), " + strata(", paste(strata, collapse = ", "), ")")
-    )
-  } else {
-    formula
-  }
-
-  cox_fit <- survival::coxph(formula, data = data, ties = ties, ...)
-  cox_ss <- summary(cox_fit, conf.int = conf_level, extend = TRUE)
-
   pval_name <- switch(pval_method,
     all = c("logtest", "sctest", "waldtest"),
     log = "logtest",
     sc = "sctest",
     wald = "waldtest"
   )
-  pval_tb <- cox_ss[pval_name] %>%
-    dplyr::bind_rows(.id = "method")
 
-  hr_tb <- tibble::tibble(
-    variable = row.names(cox_ss$conf.int),
-    n = cox_ss$n,
-    event = cox_ss$nevent,
-    hr = cox_ss$conf.int[, 1],
-    lower = cox_ss$conf.int[, 3],
-    upper = cox_ss$conf.int[, 4]
-  )
+  group_var <- attr(stats::terms(formula), "term.labels")
+  formula <- if (!is.null(strata)) {
+    as.formula(
+      paste0(format(formula), " + strata(", paste(strata, collapse = ", "), ")")
+    )
+  } else {
+    as.formula(formula)
+  }
+
+  vardf <- unlist(data[, group_var])
+  group <- if (!is.factor(vardf)) {
+    droplevels(as.factor(vardf))
+  } else {
+    droplevels(vardf)
+  }
+  grps <- levels(group)
+  bylist <- if (pairwise) {
+    t(combn(grps, 2))
+  } else {
+    t(combn(grps, 2))[which(t(combn(grps, 2))[, 1] == grps[1]), , drop = FALSE]
+  }
+
+  mods <- split(bylist, 1:nrow(bylist)) %>%
+    purrr::map(function(x) {
+      cox_ss <- filter(data, !!sym(group_var) %in% x) %>%
+        mutate(!!sym(group_var) := droplevels(!!sym(group_var))) %>%
+        coxph(formula = formula, ties = ties, ...) %>%
+        summary(conf.int = conf_level, extend = TRUE)
+    })
+
+  pval_tb <- mods %>%
+    purrr::imap(function(x, idx) {
+      x[pval_name] %>%
+        dplyr::bind_rows(.id = "method") %>%
+        mutate(comparsion = paste(
+          paste0(group_var, "=", bylist[as.numeric(idx), ]),
+          collapse = " vs. "
+        )) %>%
+        select("comparsion", "method", "test", "df", "pval" = "pvalue")
+    }) %>%
+    purrr::list_rbind()
+
+  hr_tb <- mods %>%
+    purrr::imap(function(x, idx) {
+      tibble::tibble(
+        comparsion = paste(
+          paste0(group_var, "=", bylist[as.numeric(idx), ]),
+          collapse = " vs. "
+        ),
+        n = x[["n"]],
+        events = x[["nevent"]],
+        hr = x[["conf.int"]][, 1],
+        lower = x[["conf.int"]][, 3],
+        upper = x[["conf.int"]][, 4]
+      )
+    }) %>%
+    purrr::list_rbind()
 
   structure(
     list(

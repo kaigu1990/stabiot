@@ -1,3 +1,30 @@
+#' Pipe operator
+#'
+#' See \code{magrittr::\link[magrittr:pipe]{\%>\%}} for details.
+#'
+#' @name %>%
+#' @rdname pipe
+#' @keywords internal
+#' @export
+#' @importFrom magrittr %>%
+#' @usage lhs \%>\% rhs
+#' @param lhs A value or the magrittr placeholder.
+#' @param rhs A function call using the magrittr semantics.
+#' @return The result of calling `rhs(lhs)`.
+NULL
+
+#' Create a Survival Object
+#'
+#' A copy from [survival::Surv] in `survival` package.
+#'
+#' @inheritDotParams survival::Surv
+#'
+#' @return An object of class `Surv`.
+#' @export
+Surv <- function(...) {
+  survival::Surv(...)
+}
+
 #' @describeIn s_get_survfit a modified version of [survminer::pairwise_survdiff()]
 #' that can calculate the pairwise comparisons of survival curves regardless of
 #' whether stratification is given.

@@ -11,6 +11,7 @@ s_get_coxph(
   conf_level = 0.95,
   strata = NULL,
   pval_method = c("all", "log", "sc", "wald"),
+  pairwise = FALSE,
   ...
 )
 }
@@ -31,6 +32,8 @@ interval on survival curve, default is 0.95.}
 default is to present all three methods (Likelihood ratio test, Wald test and
 Score (logrank) test).}
 
+\item{pairwise}{(\code{logical})\cr whether to conduct the pairwise comparison.}
+
 \item{...}{other arguments to be passed to \code{\link[survival:coxph]{survival::coxph()}}.}
 }
 \value{
@@ -47,7 +50,7 @@ data("whas500")
 
 # reorder the grouping variable
 dat <- whas500 \%>\%
-  mutate(
+  dplyr::mutate(
     AFB = factor(AFB, levels = c(1, 0))
   )
 s_get_coxph(data = dat, formula = Surv(LENFOL, FSTAT) ~ AFB)
@@ -63,13 +66,12 @@ s_get_coxph(
 set.seed(123)
 subj <- sample(dat$ID, 100)
 dat2 <- whas500 \%>\%
-  mutate(
-    AFB = case_when(
+  dplyr::mutate(
+    AFB = dplyr::case_when(
       ID \%in\% subj ~ 2,
       TRUE ~ AFB
     ),
     AFB = factor(AFB, levels = c(1, 2, 0))
   )
 s_get_coxph(data = dat2, formula = Surv(LENFOL, FSTAT) ~ AFB)
-
 }
