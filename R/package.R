@@ -15,7 +15,12 @@
 #' @importFrom survminer pairwise_survdiff
 #' @importFrom lubridate ymd days
 #' @importFrom utils combn
+#' @importFrom formatters format_value
 NULL
+
+#' @importFrom survival Surv
+#' @export
+survival::Surv
 
 utils::globalVariables(c(
   "ADT", "ADT.x", "ADT.y", "AVAL", "AVALC", "AVALC.x", "AVALC.y", "."

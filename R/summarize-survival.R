@@ -150,7 +150,8 @@ s_get_survfit <- function(data,
   # median survival time
   surv_tb <- if (is.null(km_fit$strata)) {
     broom::glance(km_fit) %>%
-      select(n = "nobs", "events", "median", lower = "conf.low", upper = "conf.high")
+      mutate(group = grps) %>%
+      select("group", n = "nobs", "events", "median", lower = "conf.low", upper = "conf.high")
   } else {
     tibble::as_tibble(summary(km_fit)$table) %>%
       mutate(group = grps) %>%
@@ -218,7 +219,8 @@ s_get_survfit <- function(data,
     survdiff <- h_pairwise_survdiff(
       formula = formula,
       strata = strata,
-      data = data
+      data = data,
+      rho = rho
     )
     tibble::tibble(
       comparsion = paste(bylist[, 1], bylist[, 2], sep = " vs. "),
@@ -319,6 +321,8 @@ s_get_survfit <- function(data,
 #'     AFB = factor(AFB, levels = c(1, 0))
 #'   )
 #' s_get_coxph(data = dat, formula = Surv(LENFOL, FSTAT) ~ AFB)
+#'
+#' s_get_coxph(data = dat, formula = Surv(LENFOL, FSTAT) ~ AFB, pval_method = "sc")
 #'
 #' # specify the stratified log-rank test
 #' s_get_coxph(
@@ -425,6 +429,7 @@ s_get_coxph <- function(data,
       pval = pval_tb,
       params = list(
         formula = format(formula),
+        group = paste(group_var, grps, sep = "="),
         ties = ties,
         conf_level = conf_level,
         strata = strata,

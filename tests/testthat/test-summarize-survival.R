@@ -12,6 +12,7 @@ test_that("s_get_survfit works as expected with default arguments in single grou
   expect_equal(
     res$surv$median,
     tibble::tibble(
+      group = "Total",
       n = 500,
       events = 215,
       median = 53.4538,

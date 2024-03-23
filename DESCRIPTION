@@ -19,6 +19,7 @@ Imports:
     DescTools,
     dplyr,
     emmeans,
+    formatters,
     lifecycle,
     lubridate,
     magrittr,

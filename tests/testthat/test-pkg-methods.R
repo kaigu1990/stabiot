@@ -18,3 +18,63 @@ test_that("print.s_lsmeans works as expected for mmrm", {
   res3 <- capture_output(print(s_get_lsmeans(fit, "ARMCD", by = "AVISIT", null = -2, alternative = "greater")))
   expect_match(res3, "Null hypothesis is θ inferiority to -2", fixed = TRUE)
 })
+
+test_that("print.s_survival works as expected", {
+  data("whas500")
+  dat <- whas500 %>%
+    mutate(
+      AFB = factor(AFB, levels = c(1, 0))
+    )
+  res <- capture_output(print(s_get_survfit(data = dat, formula = Surv(LENFOL, FSTAT) ~ AFB)))
+  expect_match(res, "Surv formula: Surv(LENFOL, FSTAT) ~ AFB", fixed = TRUE)
+  expect_match(res, "Group by: AFB=1, AFB=0", fixed = TRUE)
+  expect_match(res, "Confidence interval type: log-log", fixed = TRUE)
+  expect_match(res, "Estimation of Survival Time:", fixed = TRUE)
+  expect_match(res, "Hypothesis Testing with Log-Rank", fixed = TRUE)
+
+  res2 <- capture_output(print(s_get_survfit(data = dat, formula = Surv(LENFOL, FSTAT) ~ 1)))
+  expect_match(res2, "Group by: Total", fixed = TRUE)
+
+  res3 <- capture_output(print(s_get_survfit(
+    data = dat,
+    formula = Surv(LENFOL, FSTAT) ~ AFB,
+    time_point = c(12, 36, 60)
+  )))
+  expect_match(res3, "Survival Time at Specified Time Points (12,36,60)", fixed = TRUE)
+  expect_match(res3, "Survival Difference at Specified Time Points (12,36,60)", fixed = TRUE)
+
+  res4 <- capture_output(print(s_get_survfit(
+    data = dat,
+    formula = Surv(LENFOL, FSTAT) ~ AFB,
+    strata = c("AGE", "GENDER")
+  )))
+  expect_match(res4, "Stratified by: AGE, GENDER", fixed = TRUE)
+})
+
+test_that("print.s_coxph works as expected", {
+  data("whas500")
+  dat <- whas500 %>%
+    mutate(
+      AFB = factor(AFB, levels = c(1, 0))
+    )
+  res <- capture_output(print(s_get_coxph(data = dat, formula = Surv(LENFOL, FSTAT) ~ AFB)))
+  expect_match(res, "Surv formula: Surv(LENFOL, FSTAT) ~ AFB", fixed = TRUE)
+  expect_match(res, "Group by: AFB=1, AFB=0", fixed = TRUE)
+  expect_match(res, "Tie method: efro", fixed = TRUE)
+  expect_match(res, "P-value method for HR: logtest, sctest, waldtest", fixed = TRUE)
+  expect_match(res, "Estimation of Hazard Ratio", fixed = TRUE)
+
+  res2 <- capture_output(print(s_get_coxph(
+    data = dat,
+    formula = Surv(LENFOL, FSTAT) ~ AFB,
+    strata = c("AGE", "GENDER")
+  )))
+  expect_match(res2, "Stratified by: AGE, GENDER", fixed = TRUE)
+
+  res3 <- capture_output(print(s_get_coxph(
+    data = dat,
+    formula = Surv(LENFOL, FSTAT) ~ AFB,
+    pval_method = "log"
+  )))
+  expect_match(res3, "P-value method for HR: logtest", fixed = TRUE)
+})

@@ -13,20 +13,8 @@
 #' @return The result of calling `rhs(lhs)`.
 NULL
 
-#' Create a Survival Object
-#'
-#' A copy from [survival::Surv] in `survival` package.
-#'
-#' @inheritDotParams survival::Surv
-#'
-#' @return An object of class `Surv`.
-#' @export
-Surv <- function(...) {
-  survival::Surv(...)
-}
-
 #' @describeIn s_get_survfit a modified version of [survminer::pairwise_survdiff()]
-#' that can calculate the pairwise comparisons of survival curves regardless of
+#' that can calculates the pairwise comparisons of survival curves regardless of
 #' whether stratification is given.
 #'
 #' @export
