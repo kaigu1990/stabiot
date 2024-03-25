@@ -5,14 +5,22 @@
 "_PACKAGE"
 
 #' @import checkmate
+#' @importFrom magrittr set_colnames
 #' @importFrom lifecycle deprecated
-#' @importFrom stats pbeta rbinom confint as.formula setNames coef
-#' @importFrom dplyr add_count arrange case_when count distinct filter group_by
-#'  left_join mutate row_number select ungroup
+#' @importFrom stats pbeta rbinom confint as.formula setNames coef quantile
+#' @importFrom dplyr add_count arrange case_when count distinct filter full_join
+#'  group_by left_join mutate row_number rowwise select summarise ungroup
 #' @importFrom rlang sym := .data
-#' @importFrom survival coxph Surv strata
+#' @importFrom survival coxph strata
+#' @importFrom survminer pairwise_survdiff
 #' @importFrom lubridate ymd days
+#' @importFrom utils combn
+#' @importFrom formatters format_value
 NULL
+
+#' @importFrom survival Surv
+#' @export
+survival::Surv
 
 utils::globalVariables(c(
   "ADT", "ADT.x", "ADT.y", "AVAL", "AVALC", "AVALC.x", "AVALC.y", "."
@@ -22,13 +30,13 @@ utils::globalVariables(c(
   op <- options()
   op.stabiot <- list(
     stabiot.aval.mapping = tibble::tribble(
-      ~avalc_temp,           ~aval_temp,
-      "CR",             1,
-      "PR",             2,
-      "SD",             3,
+      ~avalc_temp, ~aval_temp,
+      "CR", 1,
+      "PR", 2,
+      "SD", 3,
       # "NON-CR/NON-PD",  4,
-      "PD",             4,
-      "NE",             5
+      "PD", 4,
+      "NE", 5
     ),
     stabiot.precision.default = tibble::tribble(
       ~stat,     ~extra,

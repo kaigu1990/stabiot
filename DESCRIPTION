@@ -14,10 +14,12 @@ LazyData: true
 Depends: 
     R (>= 3.6)
 Imports:
+    broom,
     checkmate,
     DescTools,
     dplyr,
     emmeans,
+    formatters,
     lifecycle,
     lubridate,
     magrittr,
@@ -25,6 +27,7 @@ Imports:
     rlang,
     stats,
     survival,
+    survminer,
     tibble,
     tidyr
 Suggests: 
