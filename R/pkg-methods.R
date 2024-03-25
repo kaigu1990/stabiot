@@ -88,7 +88,7 @@ print.s_survival <- function(x, ...) {
   cat("Confidence interval type: ", x$params$conf_type, "\n", sep = "")
 
   cat("\n---\n")
-  cat("Estimation of Survival Time:\n")
+  cat("Time to Event:\n")
   med <- x$surv$median %>%
     rowwise() %>%
     mutate(
@@ -137,11 +137,10 @@ print.s_survival <- function(x, ...) {
   if (!is.null(x$surv$time_point)) {
     cat("---\n")
     cat(
-      "Survival Time at Specified Time Points (",
+      "At Specified Time Points (",
       paste(unique(x$surv$time_point$time), collapse = ","), "):\n",
       sep = ""
     )
-    # print(x$surv$time_point)
     x$surv$time_point %>%
       rowwise() %>%
       mutate(
@@ -172,7 +171,7 @@ print.s_survival <- function(x, ...) {
   if (!is.null(x$surv_diff$rate)) {
     cat("---\n")
     cat(
-      "Survival Difference at Specified Time Points (",
+      "Difference at Specified Time Points (",
       paste(unique(x$surv$time_point$time), collapse = ","), "):\n",
       sep = ""
     )

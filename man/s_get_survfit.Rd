@@ -137,4 +137,19 @@ s_get_survfit(
   pairwise = TRUE
 )
 }
+\references{
+SAS code for your reference with consistent results.
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{ods output Quartiles=km_quartiles SurvivalPlot=km_survplot SurvDiff=km_survdiff;
+ods listing close;
+proc lifetest data=whas500 method=KM alphaqt=0.05
+  timelist=12 36 60 reduceout stderr
+  conftype=loglog outsurv=surv_est;
+  time LENFOL*FSTAT(0);
+  strata AFB / test=logrank diff=control('1');
+  /* 	strata AGE GENDER / group=AFB; */
+run;
+ods listing;
+}\if{html}{\out{</div>}}
+}
 \keyword{internal}

@@ -45,6 +45,21 @@
 #' Stratification can only alter the testing survival curves, therefore there will
 #' be no changes to other outputs when the `strata` argument is defined.
 #'
+#' @references
+#' SAS code for your reference with consistent results.
+#' ```
+#' ods output Quartiles=km_quartiles SurvivalPlot=km_survplot SurvDiff=km_survdiff;
+#' ods listing close;
+#' proc lifetest data=whas500 method=KM alphaqt=0.05
+#'   timelist=12 36 60 reduceout stderr
+#'   conftype=loglog outsurv=surv_est;
+#'   time LENFOL*FSTAT(0);
+#'   strata AFB / test=logrank diff=control('1');
+#'   /* 	strata AGE GENDER / group=AFB; */
+#' run;
+#' ods listing;
+#' ```
+#'
 #' @export
 #'
 #' @examples
@@ -309,6 +324,21 @@ s_get_survfit <- function(data,
 #'
 #' @return
 #' An object of class `s_coxph` is a list contains hazards ratio and p-value tables.
+#'
+#' @references
+#' SAS code for your reference with consistent results.
+#' ```
+#' ods output hazardratios=hrs;
+#' ods output ParameterEstimates=hr_est;
+#' ods listing close;
+#' proc phreg data=whas500 alpha=0.05;
+#'   class AFB (param=ref ref='1') AGE GENDER;
+#'   model LENFOL*FSTAT(0)=AFB / ties=efron risklimits=wald;
+#'   /* 	strata AGE GENDER; */
+#'   hazardratio AFB / diff=ref;
+#' quit;
+#' ods listing;
+#'```
 #'
 #' @export
 #'

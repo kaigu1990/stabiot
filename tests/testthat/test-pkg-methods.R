@@ -29,7 +29,7 @@ test_that("print.s_survival works as expected", {
   expect_match(res, "Surv formula: Surv(LENFOL, FSTAT) ~ AFB", fixed = TRUE)
   expect_match(res, "Group by: AFB=1, AFB=0", fixed = TRUE)
   expect_match(res, "Confidence interval type: log-log", fixed = TRUE)
-  expect_match(res, "Estimation of Survival Time:", fixed = TRUE)
+  expect_match(res, "Time to Event", fixed = TRUE)
   expect_match(res, "Hypothesis Testing with Log-Rank", fixed = TRUE)
 
   res2 <- capture_output(print(s_get_survfit(data = dat, formula = Surv(LENFOL, FSTAT) ~ 1)))
@@ -40,8 +40,8 @@ test_that("print.s_survival works as expected", {
     formula = Surv(LENFOL, FSTAT) ~ AFB,
     time_point = c(12, 36, 60)
   )))
-  expect_match(res3, "Survival Time at Specified Time Points (12,36,60)", fixed = TRUE)
-  expect_match(res3, "Survival Difference at Specified Time Points (12,36,60)", fixed = TRUE)
+  expect_match(res3, "At Specified Time Points (12,36,60)", fixed = TRUE)
+  expect_match(res3, "Difference at Specified Time Points (12,36,60)", fixed = TRUE)
 
   res4 <- capture_output(print(s_get_survfit(
     data = dat,

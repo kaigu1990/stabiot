@@ -85,4 +85,19 @@ dat2 <- whas500 \%>\%
   )
 s_get_coxph(data = dat2, formula = Surv(LENFOL, FSTAT) ~ AFB)
 }
+\references{
+SAS code for your reference with consistent results.
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{ods output hazardratios=hrs;
+ods output ParameterEstimates=hr_est;
+ods listing close;
+proc phreg data=whas500 alpha=0.05;
+  class AFB (param=ref ref='1') AGE GENDER;
+  model LENFOL*FSTAT(0)=AFB / ties=efron risklimits=wald;
+  /* 	strata AGE GENDER; */
+  hazardratio AFB / diff=ref;
+quit;
+ods listing;
+}\if{html}{\out{</div>}}
+}
 \keyword{internal}
