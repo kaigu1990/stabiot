@@ -86,7 +86,7 @@ test_that("s_get_survfit works as expected with default arguments in two groups"
   expect_equal(
     res$surv_diff$test,
     tibble::tibble(
-      comparsion = "AFB=1 vs. AFB=0",
+      comparsion = "AFB=0 vs. AFB=1",
       method = "Log-Rank",
       pval = 0.0009616214
     ),
@@ -120,7 +120,7 @@ test_that("s_get_survfit works as expected with specific time points", {
   expect_equal(
     res$surv_diff$rate[, c("group", "surv.diff", "lower", "upper", "pval")],
     tibble::tibble(
-      group = rep("AFB=0 - AFB=1", 3),
+      group = rep("AFB=0 vs. AFB=1", 3),
       surv.diff = c(0.09831085, 0.19007956, 0.21507329),
       lower = c(-0.01608841, 0.06331489, 0.07509421),
       upper = c(0.2127101, 0.3168442, 0.3550524),
@@ -145,7 +145,7 @@ test_that("s_get_survfit works as expected with stratified variables", {
   expect_equal(
     res$surv_diff$test,
     tibble::tibble(
-      comparsion = "AFB=1 vs. AFB=0",
+      comparsion = "AFB=0 vs. AFB=1",
       method = "Stratified Log-Rank",
       pval = 0.08269744
     ),
@@ -190,7 +190,7 @@ test_that("s_get_coxph works as expected with default arguments", {
   expect_equal(
     res$hr,
     tibble::tibble(
-      comparsion = c("AFB=1 vs. AFB=0"),
+      comparsion = c("AFB=0 vs. AFB=1"),
       n = 500,
       events = 215,
       hr = 0.5828995,
@@ -202,7 +202,7 @@ test_that("s_get_coxph works as expected with default arguments", {
   expect_equal(
     res$pval,
     tibble::tibble(
-      comparsion = rep("AFB=1 vs. AFB=0", 3),
+      comparsion = rep("AFB=0 vs. AFB=1", 3),
       method = c("logtest", "sctest", "waldtest"),
       test = c(9.584563, 10.903404, 10.640000),
       df = c(1, 1, 1),
@@ -227,7 +227,7 @@ test_that("s_get_coxph works as expected with stratification", {
   expect_equal(
     res$hr,
     tibble::tibble(
-      comparsion = c("AFB=1 vs. AFB=0"),
+      comparsion = c("AFB=0 vs. AFB=1"),
       n = 500,
       events = 215,
       hr = 0.6952678,
@@ -239,7 +239,7 @@ test_that("s_get_coxph works as expected with stratification", {
   expect_equal(
     res$pval,
     tibble::tibble(
-      comparsion = rep("AFB=1 vs. AFB=0", 3),
+      comparsion = rep("AFB=0 vs. AFB=1", 3),
       method = c("logtest", "sctest", "waldtest"),
       test = c(2.964049, 3.060662, 3.040000),
       df = c(1, 1, 1),

@@ -40,8 +40,8 @@ test_that("print.s_survival works as expected", {
     formula = Surv(LENFOL, FSTAT) ~ AFB,
     time_point = c(12, 36, 60)
   )))
-  expect_match(res3, "At Specified Time Points (12,36,60)", fixed = TRUE)
-  expect_match(res3, "Difference at Specified Time Points (12,36,60)", fixed = TRUE)
+  expect_match(res3, "At Specified Time Points (12, 36, 60)", fixed = TRUE)
+  expect_match(res3, "Difference of Event-free Rate at Specified Time Points (12,36,60)", fixed = TRUE)
 
   res4 <- capture_output(print(s_get_survfit(
     data = dat,

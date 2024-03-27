@@ -93,16 +93,22 @@ print.s_survival <- function(x, ...) {
     rowwise() %>%
     mutate(
       `n(event)` = format_value(c(.data$n, .data$events), format = "xx (xx)"),
-      Median = format_value(c(.data$median, .data$lower, .data$upper),
-        format = "xx.xx (xx.xx - xx.xx)"
+      Median = paste(
+        format_value(.data$median, format = "xx.xx"),
+        format_value(c(.data$lower, .data$upper),
+          format = "(xx.xx, xx.xx)"
+        )
       )
     ) %>%
     select("group", "n(event)", "Median")
   quant <- x$surv$quantile %>%
     rowwise() %>%
     mutate(
-      surv = format_value(c(.data$time, .data$lower, .data$upper),
-        format = "xx.xx (xx.xx - xx.xx)"
+      surv = paste(
+        format_value(.data$time, format = "xx.xx"),
+        format_value(c(.data$lower, .data$upper),
+          format = "(xx.xx, xx.xx)"
+        )
       )
     ) %>%
     tidyr::pivot_wider(
@@ -114,23 +120,23 @@ print.s_survival <- function(x, ...) {
   rang <- x$surv$range %>%
     rowwise() %>%
     mutate(
-      `Range (event)` = format_value(c(.data$event_min, .data$event_max),
+      `Range.event` = format_value(c(.data$event_min, .data$event_max),
         format = "(xx.x, xx.x)"
       ),
-      `Range (censor)` = format_value(c(.data$censor_min, .data$censor_max),
+      `Range.censor` = format_value(c(.data$censor_min, .data$censor_max),
         format = "(xx.x, xx.x)"
       ),
       `Range` = format_value(c(.data$min, .data$max),
         format = "(xx.x, xx.x)"
       )
     ) %>%
-    select("group", "Range (event)", "Range (censor)", "Range")
+    select("group", "Range.event", "Range.censor", "Range")
   list(med, quant, rang) %>%
     purrr::reduce(full_join, by = "group") %>%
     tidyr::pivot_longer(cols = -1, values_to = "Value", names_to = "Stat") %>%
     tidyr::pivot_wider(names_from = "group", values_from = "Value") %>%
     tibble::column_to_rownames(var = "Stat") %>%
-    print()
+    print(right = FALSE)
   cat("\n")
 
 
@@ -138,22 +144,25 @@ print.s_survival <- function(x, ...) {
     cat("---\n")
     cat(
       "At Specified Time Points (",
-      paste(unique(x$surv$time_point$time), collapse = ","), "):\n",
+      paste(unique(x$surv$time_point$time), collapse = ", "), "):\n",
       sep = ""
     )
     x$surv$time_point %>%
       rowwise() %>%
       mutate(
-        `Number at risk` = as.character(.data$n.risk),
-        `Number of event` = as.character(.data$n.event),
-        `Number of consor` = as.character(.data$n.censor),
-        `Survival Rate` = format_value(c(.data$surv, .data$lower, .data$upper),
-          format = "xx.xx (xx.xx - xx.xx)"
+        `No. at risk` = as.character(.data$n.risk),
+        `No. event` = as.character(.data$n.event),
+        `No. consor` = as.character(.data$n.censor),
+        `Event-free rate` = paste(
+          format_value(.data$surv, format = "xx.xxx"),
+          format_value(c(.data$lower, .data$upper),
+            format = "(xx.xxx, xx.xxx)"
+          )
         )
       ) %>%
       select(
-        "time", "Number at risk", "Number of event",
-        "Number of consor", "Survival Rate", "group"
+        "time", "No. at risk", "No. event",
+        "No. consor", "Event-free rate", "group"
       ) %>%
       ungroup() %>%
       dplyr::group_split(.data$time) %>%
@@ -163,7 +172,7 @@ print.s_survival <- function(x, ...) {
           tidyr::pivot_longer(cols = -c("group"), values_to = "Value", names_to = "Stat") %>%
           tidyr::pivot_wider(names_from = "group", values_from = "Value") %>%
           tibble::column_to_rownames(var = "Stat") %>%
-          print()
+          print(right = FALSE)
         cat("\n")
       })
   }
@@ -171,20 +180,23 @@ print.s_survival <- function(x, ...) {
   if (!is.null(x$surv_diff$rate)) {
     cat("---\n")
     cat(
-      "Difference at Specified Time Points (",
+      "Difference of Event-free Rate at Specified Time Points (",
       paste(unique(x$surv$time_point$time), collapse = ","), "):\n",
       sep = ""
     )
     x$surv_diff$rate %>%
       rowwise() %>%
       mutate(
-        `Diff (Survival Rate)` = format_value(c(.data$surv.diff, .data$lower, .data$upper),
-          format = "xx.xx (xx.xx - xx.xx)"
+        `Diff` = paste(
+          format_value(.data$surv.diff, format = "xx.xxx"),
+          format_value(c(.data$lower, .data$upper),
+            format = "(xx.xxx, xx.xxx)"
+          )
         ),
         `p-value` = format_value(.data$pval, "x.xxxx | (<0.0001)")
       ) %>%
       select(
-        "time", "Diff (Survival Rate)", "p-value", "group"
+        "time", "Diff", "p-value", "group"
       ) %>%
       ungroup() %>%
       dplyr::group_split(.data$time) %>%
@@ -194,7 +206,7 @@ print.s_survival <- function(x, ...) {
           tidyr::pivot_longer(cols = -c("group"), values_to = "Value", names_to = "Stat") %>%
           tidyr::pivot_wider(names_from = "group", values_from = "Value") %>%
           tibble::column_to_rownames(var = "Stat") %>%
-          print()
+          print(right = FALSE)
         cat("\n")
       })
   }
@@ -210,7 +222,7 @@ print.s_survival <- function(x, ...) {
     x$surv_diff$test %>%
       tidyr::pivot_wider(names_from = "comparsion", values_from = "pval") %>%
       tibble::column_to_rownames(var = "method") %>%
-      print()
+      print(right = FALSE)
   }
 
   invisible(x)
@@ -269,7 +281,7 @@ print.s_coxph <- function(x, ...) {
     tidyr::pivot_longer(cols = -1, values_to = "Value", names_to = "Stat") %>%
     tidyr::pivot_wider(names_from = "comparsion", values_from = "Value") %>%
     tibble::column_to_rownames(var = "Stat") %>%
-    print()
+    print(right = FALSE)
 
   invisible(x)
 }

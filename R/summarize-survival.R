@@ -211,7 +211,7 @@ s_get_survfit <- function(data,
           split(time_point) %>%
           purrr::map(function(x) {
             tibble::tibble(
-              group = paste(rev(x$group), collapse = " - "),
+              group = paste(rev(x$group), collapse = " vs. "),
               time = unique(x$time),
               surv.diff = diff(x$surv),
               std.err = sqrt(sum(x$std.err^2)),
@@ -238,7 +238,7 @@ s_get_survfit <- function(data,
       rho = rho
     )
     tibble::tibble(
-      comparsion = paste(bylist[, 1], bylist[, 2], sep = " vs. "),
+      comparsion = paste(bylist[, 2], bylist[, 1], sep = " vs. "),
       method = survdiff$method,
       pval = as.numeric(mapply(function(x, y) {
         survdiff$p.value[x, y]
@@ -338,7 +338,7 @@ s_get_survfit <- function(data,
 #'   hazardratio AFB / diff=ref;
 #' quit;
 #' ods listing;
-#'```
+#' ```
 #'
 #' @export
 #'
@@ -430,7 +430,7 @@ s_get_coxph <- function(data,
       x[pval_name] %>%
         dplyr::bind_rows(.id = "method") %>%
         mutate(comparsion = paste(
-          paste0(group_var, "=", bylist[as.numeric(idx), ]),
+          paste0(group_var, "=", rev(bylist[as.numeric(idx), ])),
           collapse = " vs. "
         )) %>%
         select("comparsion", "method", "test", "df", "pval" = "pvalue")
@@ -441,7 +441,7 @@ s_get_coxph <- function(data,
     purrr::imap(function(x, idx) {
       tibble::tibble(
         comparsion = paste(
-          paste0(group_var, "=", bylist[as.numeric(idx), ]),
+          paste0(group_var, "=", rev(bylist[as.numeric(idx), ])),
           collapse = " vs. "
         ),
         n = x[["n"]],
