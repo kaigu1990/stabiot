@@ -27,10 +27,10 @@ test_that("print.s_survival works as expected", {
     )
   res <- capture_output(print(s_get_survfit(data = dat, formula = Surv(LENFOL, FSTAT) ~ AFB)))
   expect_match(res, "Surv formula: Surv(LENFOL, FSTAT) ~ AFB", fixed = TRUE)
-  expect_match(res, "Group by: AFB=1, AFB=0", fixed = TRUE)
+  expect_match(res, "Group by: 1, 0", fixed = TRUE)
   expect_match(res, "Confidence interval type: log-log", fixed = TRUE)
-  expect_match(res, "Time to Event", fixed = TRUE)
-  expect_match(res, "Hypothesis Testing with Log-Rank", fixed = TRUE)
+  expect_match(res, "Time to event (months)", fixed = TRUE)
+  expect_match(res, "Unstratified log-rank test", fixed = TRUE)
 
   res2 <- capture_output(print(s_get_survfit(data = dat, formula = Surv(LENFOL, FSTAT) ~ 1)))
   expect_match(res2, "Group by: Total", fixed = TRUE)
@@ -40,8 +40,8 @@ test_that("print.s_survival works as expected", {
     formula = Surv(LENFOL, FSTAT) ~ AFB,
     time_point = c(12, 36, 60)
   )))
-  expect_match(res3, "At Specified Time Points (12, 36, 60)", fixed = TRUE)
-  expect_match(res3, "Difference of Event-free Rate at Specified Time Points (12,36,60)", fixed = TRUE)
+  expect_match(res3, "Event-free rate", fixed = TRUE)
+  expect_match(res3, "Difference in Event Free Rate", fixed = TRUE)
 
   res4 <- capture_output(print(s_get_survfit(
     data = dat,
@@ -59,10 +59,14 @@ test_that("print.s_coxph works as expected", {
     )
   res <- capture_output(print(s_get_coxph(data = dat, formula = Surv(LENFOL, FSTAT) ~ AFB)))
   expect_match(res, "Surv formula: Surv(LENFOL, FSTAT) ~ AFB", fixed = TRUE)
-  expect_match(res, "Group by: AFB=1, AFB=0", fixed = TRUE)
+  expect_match(res, "Group by: 1, 0", fixed = TRUE)
   expect_match(res, "Tie method: efro", fixed = TRUE)
   expect_match(res, "P-value method for HR: logtest, sctest, waldtest", fixed = TRUE)
-  expect_match(res, "Estimation of Hazard Ratio", fixed = TRUE)
+  expect_match(res, "Unstratified Analysis", fixed = TRUE)
+  expect_match(res, "Hazard Ratio", fixed = TRUE)
+  expect_match(res, "p-value (logtest)", fixed = TRUE)
+  expect_match(res, "p-value (sctest)", fixed = TRUE)
+  expect_match(res, "p-value (waldtest)", fixed = TRUE)
 
   res2 <- capture_output(print(s_get_coxph(
     data = dat,

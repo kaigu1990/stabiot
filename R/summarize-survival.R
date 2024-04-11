@@ -27,6 +27,8 @@
 #' @param pairwise (`logical`)\cr whether to conduct the pairwise comparison.
 #' @param ... other arguments to be passed to [survival::survfit()].
 #'
+#' @order 1
+#'
 #' @return
 #' An object of class `s_survival` is a list contains several summary tables
 #'
@@ -327,6 +329,8 @@ s_get_survfit <- function(data,
 #'  Score (logrank) test).
 #' @param pairwise (`logical`)\cr whether to conduct the pairwise comparison.
 #' @param ... other arguments to be passed to [survival::coxph()].
+#'
+#' @order 1
 #'
 #' @return
 #' An object of class `s_coxph` is a list contains hazards ratio and p-value tables.

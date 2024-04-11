@@ -25,6 +25,7 @@ Imports:
     magrittr,
     purrr,
     rlang,
+    rtables,
     stats,
     survival,
     survminer,
