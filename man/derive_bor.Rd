@@ -142,13 +142,13 @@ adrs <- tibble::tribble(
   "7",      "2020-02-02", "2020-02-16", "CR",
   "7",      "2020-02-02", "2020-04-01", "NE",
   "8",      "2020-02-01", "2020-02-16", "PD"
-) \%>\%
+) |>
   dplyr::mutate(
     ADT = lubridate::ymd(ADTC),
     TRTSDT = lubridate::ymd(TRTSDTC),
     PARAMCD = "OVR",
     PARAM = "Overall Response by Investigator"
-  ) \%>\%
+  ) |>
   dplyr::select(-TRTSDTC)
 
 # Derive BOR without confirmation.

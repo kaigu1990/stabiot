@@ -7,7 +7,7 @@
 \alias{h_pairwise_survdiff}
 \title{Summarize Survival Curves Analysis}
 \usage{
-\method{print}{s_survival}(x, ...)
+\method{print}{s_survival}(x, fm = "months", ...)
 
 s_get_survfit(
   data,
@@ -92,7 +92,7 @@ be no changes to other outputs when the \code{strata} argument is defined.
 data("whas500")
 
 # reorder the grouping variable
-dat <- whas500 \%>\%
+dat <- whas500 |>
   dplyr::mutate(
     AFB = factor(AFB, levels = c(1, 0))
   )
@@ -120,7 +120,7 @@ s_get_survfit(
 # dummy three groups
 set.seed(123)
 subj <- sample(dat$ID, 100)
-dat2 <- whas500 \%>\%
+dat2 <- whas500 |>
   dplyr::mutate(
     AFB = dplyr::case_when(
       ID \%in\% subj ~ 2,
@@ -129,12 +129,11 @@ dat2 <- whas500 \%>\%
     AFB = factor(AFB, levels = c(1, 2, 0))
   )
 
-# pairwise comparison
 s_get_survfit(
   data = dat2,
   formula = Surv(LENFOL, FSTAT) ~ AFB,
   time_point = c(12, 36, 60),
-  pairwise = TRUE
+  pairwise = FALSE
 )
 }
 \references{

@@ -57,7 +57,7 @@ hazards ratio, confidence interval and p-value for common clinical survival anal
 data("whas500")
 
 # reorder the grouping variable
-dat <- whas500 \%>\%
+dat <- whas500 |>
   dplyr::mutate(
     AFB = factor(AFB, levels = c(1, 0))
   )
@@ -65,7 +65,7 @@ s_get_coxph(data = dat, formula = Surv(LENFOL, FSTAT) ~ AFB)
 
 s_get_coxph(data = dat, formula = Surv(LENFOL, FSTAT) ~ AFB, pval_method = "sc")
 
-# specify the stratified log-rank test
+# specify the stratified analysis
 s_get_coxph(
   data = dat,
   formula = Surv(LENFOL, FSTAT) ~ AFB,
@@ -75,7 +75,7 @@ s_get_coxph(
 # dummy three groups
 set.seed(123)
 subj <- sample(dat$ID, 100)
-dat2 <- whas500 \%>\%
+dat2 <- whas500 |>
   dplyr::mutate(
     AFB = dplyr::case_when(
       ID \%in\% subj ~ 2,

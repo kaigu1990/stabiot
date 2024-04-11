@@ -66,7 +66,7 @@
 #' data("whas500")
 #'
 #' # reorder the grouping variable
-#' dat <- whas500 %>%
+#' dat <- whas500 |>
 #'   dplyr::mutate(
 #'     AFB = factor(AFB, levels = c(1, 0))
 #'   )
@@ -94,7 +94,7 @@
 #' # dummy three groups
 #' set.seed(123)
 #' subj <- sample(dat$ID, 100)
-#' dat2 <- whas500 %>%
+#' dat2 <- whas500 |>
 #'   dplyr::mutate(
 #'     AFB = dplyr::case_when(
 #'       ID %in% subj ~ 2,
@@ -103,12 +103,11 @@
 #'     AFB = factor(AFB, levels = c(1, 2, 0))
 #'   )
 #'
-#' # pairwise comparison
 #' s_get_survfit(
 #'   data = dat2,
 #'   formula = Surv(LENFOL, FSTAT) ~ AFB,
 #'   time_point = c(12, 36, 60),
-#'   pairwise = TRUE
+#'   pairwise = FALSE
 #' )
 s_get_survfit <- function(data,
                           formula,
@@ -126,7 +125,7 @@ s_get_survfit <- function(data,
   assert_numeric(time_point, null.ok = TRUE)
   assert_number(conf_level, lower = 0, upper = 1)
   assert_subset(strata, names(data))
-  assert_number(rho)
+  assert_int(rho, lower = 0, upper = 1)
   assert_logical(pairwise)
   conf_type <- match.arg(conf_type, c("log-log", "log", "plain"), several.ok = FALSE)
 
@@ -140,9 +139,11 @@ s_get_survfit <- function(data,
   )
 
   grps <- if (is.null(km_fit$strata)) {
-    "Total"
+    grp_var <- "new_col"
+    data[[grp_var]] <- "Total"
   } else {
-    names(km_fit$strata)
+    grp_var <- attr(stats::terms(formula), "term.labels")
+    sub(paste0(grp_var, "="), "", names(km_fit$strata))
   }
 
   # quantile survival time
@@ -155,8 +156,9 @@ s_get_survfit <- function(data,
       }
     }) %>%
     purrr::list_rbind() %>%
-    tidyr::pivot_longer(cols = dplyr::all_of(grps), names_to = "group") %>%
+    tidyr::pivot_longer(cols = dplyr::contains(grps), names_to = "group") %>%
     mutate(
+      group = sub(paste0(grp_var, "="), "", .data$group),
       type = rep(c("time", "lower", "upper"), each = length(quantile) * length(grps)),
       quantile = rep(quantile * 100, each = length(grps), times = 3)
     ) %>%
@@ -175,7 +177,7 @@ s_get_survfit <- function(data,
 
   # overall survival rate
   cols <- c("time", "n.risk", "n.event", "n.censor", "surv", "std.err", "lower", "upper")
-  overall <- summary(km_fit)
+  overall <- summary(km_fit, censored = TRUE)
   surv_overall_rate <- if (is.null(km_fit$strata)) {
     tibble::as_tibble(overall[cols]) %>%
       mutate(group = grps)
@@ -211,7 +213,8 @@ s_get_survfit <- function(data,
           split(time_point) %>%
           purrr::map(function(x) {
             tibble::tibble(
-              group = paste(rev(x$group), collapse = " vs. "),
+              reference = x[["group"]][1],
+              comparison = x[["group"]][2],
               time = unique(x$time),
               surv.diff = diff(x$surv),
               std.err = sqrt(sum(x$std.err^2)),
@@ -238,7 +241,8 @@ s_get_survfit <- function(data,
       rho = rho
     )
     tibble::tibble(
-      comparsion = paste(bylist[, 2], bylist[, 1], sep = " vs. "),
+      reference = bylist[, 1],
+      comparison = bylist[, 2],
       method = survdiff$method,
       pval = as.numeric(mapply(function(x, y) {
         survdiff$p.value[x, y]
@@ -273,6 +277,7 @@ s_get_survfit <- function(data,
 
   structure(
     list(
+      data = data,
       surv = list(
         median = surv_tb,
         quantile = quant,
@@ -286,6 +291,7 @@ s_get_survfit <- function(data,
       ),
       params = list(
         formula = format(formula),
+        var = grp_var,
         quantile = quantile,
         time_point = time_point,
         conf_type = conf_type,
@@ -346,7 +352,7 @@ s_get_survfit <- function(data,
 #' data("whas500")
 #'
 #' # reorder the grouping variable
-#' dat <- whas500 %>%
+#' dat <- whas500 |>
 #'   dplyr::mutate(
 #'     AFB = factor(AFB, levels = c(1, 0))
 #'   )
@@ -354,7 +360,7 @@ s_get_survfit <- function(data,
 #'
 #' s_get_coxph(data = dat, formula = Surv(LENFOL, FSTAT) ~ AFB, pval_method = "sc")
 #'
-#' # specify the stratified log-rank test
+#' # specify the stratified analysis
 #' s_get_coxph(
 #'   data = dat,
 #'   formula = Surv(LENFOL, FSTAT) ~ AFB,
@@ -364,7 +370,7 @@ s_get_survfit <- function(data,
 #' # dummy three groups
 #' set.seed(123)
 #' subj <- sample(dat$ID, 100)
-#' dat2 <- whas500 %>%
+#' dat2 <- whas500 |>
 #'   dplyr::mutate(
 #'     AFB = dplyr::case_when(
 #'       ID %in% subj ~ 2,
@@ -395,7 +401,7 @@ s_get_coxph <- function(data,
     wald = "waldtest"
   )
 
-  group_var <- attr(stats::terms(formula), "term.labels")
+  grp_var <- attr(stats::terms(formula), "term.labels")
   formula <- if (!is.null(strata)) {
     as.formula(
       paste0(format(formula), " + strata(", paste(strata, collapse = ", "), ")")
@@ -404,7 +410,7 @@ s_get_coxph <- function(data,
     as.formula(formula)
   }
 
-  vardf <- unlist(data[, group_var])
+  vardf <- unlist(data[, grp_var])
   group <- if (!is.factor(vardf)) {
     droplevels(as.factor(vardf))
   } else {
@@ -419,8 +425,8 @@ s_get_coxph <- function(data,
 
   mods <- split(bylist, 1:nrow(bylist)) %>%
     purrr::map(function(x) {
-      cox_ss <- filter(data, !!sym(group_var) %in% x) %>%
-        mutate(!!sym(group_var) := droplevels(!!sym(group_var))) %>%
+      cox_ss <- filter(data, !!sym(grp_var) %in% x) %>%
+        mutate(!!sym(grp_var) := droplevels(!!sym(grp_var))) %>%
         coxph(formula = formula, ties = ties, ...) %>%
         summary(conf.int = conf_level, extend = TRUE)
     })
@@ -429,21 +435,19 @@ s_get_coxph <- function(data,
     purrr::imap(function(x, idx) {
       x[pval_name] %>%
         dplyr::bind_rows(.id = "method") %>%
-        mutate(comparsion = paste(
-          paste0(group_var, "=", rev(bylist[as.numeric(idx), ])),
-          collapse = " vs. "
-        )) %>%
-        select("comparsion", "method", "test", "df", "pval" = "pvalue")
+        mutate(
+          reference = bylist[as.numeric(idx), ][1],
+          comparison = bylist[as.numeric(idx), ][2]
+        ) %>%
+        select("reference", "comparison", "method", "test", "df", "pval" = "pvalue")
     }) %>%
     purrr::list_rbind()
 
   hr_tb <- mods %>%
     purrr::imap(function(x, idx) {
       tibble::tibble(
-        comparsion = paste(
-          paste0(group_var, "=", rev(bylist[as.numeric(idx), ])),
-          collapse = " vs. "
-        ),
+        reference = bylist[as.numeric(idx), ][1],
+        comparison = bylist[as.numeric(idx), ][2],
         n = x[["n"]],
         events = x[["nevent"]],
         hr = x[["conf.int"]][, 1],
@@ -455,11 +459,13 @@ s_get_coxph <- function(data,
 
   structure(
     list(
+      data = data,
       hr = hr_tb,
       pval = pval_tb,
       params = list(
         formula = format(formula),
-        group = paste(group_var, grps, sep = "="),
+        var = grp_var,
+        group = grps,
         ties = ties,
         conf_level = conf_level,
         strata = strata,

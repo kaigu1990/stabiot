@@ -94,8 +94,8 @@
 #'
 #'
 #' # fit ANCOVA model:
-#' fit2 <- fev_data %>%
-#'   dplyr::filter(VISITN == 4 & !is.na(FEV1)) %>%
+#' fit2 <- fev_data |>
+#'   dplyr::filter(VISITN == 4 & !is.na(FEV1)) |>
 #'   lm(formula = FEV1 ~ FEV1_BL + RACE + SEX + ARMCD)
 #'
 #' s_get_lsmeans(fit2, "ARMCD")
