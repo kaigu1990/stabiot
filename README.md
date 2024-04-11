@@ -15,15 +15,16 @@ be ADaM format preferably, but they do not have to strictly follow the
 CDISC standards.
 
 To guarantee accurate results, I prefer to wrap mature R package rather
-than rebuild statistical methods. For present, the completed sections
-are listed below.
+than rebuild statistical methods. Parts of statistics outputs are styled
+with `rtables`. For present, the completed sections are listed below.
 
 - Simulation of sample size determination by Bayesian.
 - Summarize Least-squares Means from models, such as ANCOVA and MMRM.
 - Compute response rate, odds ratio with or without stratification, and
   corresponding confidence interval.
 - Derive best overall response (confirmed or not confirmed BOR) per
-  RECIST 1.1
+  RECIST 1.1.
+- Summarize survival analyses using `survival` package.
 
 ## Installation
 
