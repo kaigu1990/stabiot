@@ -51,7 +51,7 @@ h_pairwise_survdiff <- function(formula,
   }
 
   level.names <- levels(group)
-  ix <- setNames(seq_along(level.names), paste0(group_var, "=", level.names))
+  ix <- setNames(seq_along(level.names), level.names)
   pval <- outer(
     ix[-1L], ix[-length(ix)],
     function(ivec, jvec) {

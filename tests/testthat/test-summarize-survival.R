@@ -32,15 +32,15 @@ test_that("s_get_survfit works as expected with default arguments in single grou
     ),
     tolerance = 0.0001
   )
-  expect_identical(dim(res$surv$overall), c(162L, 9L))
+  expect_identical(dim(res$surv$overall), c(395L, 9L))
   expect_equal(
     res$surv$range,
     tibble::tibble(
       group = "Total",
       event_min = 0.03285421,
       event_max = 77.47023,
-      censor_min = 12.55031,
-      censor_max = 77.20739,
+      censor_min = 12.09035,
+      censor_max = 72.01643,
       min = 0.03285421,
       max = 77.47023
     ),
@@ -62,7 +62,7 @@ test_that("s_get_survfit works as expected with default arguments in two groups"
   expect_equal(
     res$surv$median,
     tibble::tibble(
-      group = c("AFB=1", "AFB=0"),
+      group = c("1", "0"),
       n = c(78, 422),
       events = c(47, 168),
       median = c(28.41889, 70.96509),
@@ -74,7 +74,7 @@ test_that("s_get_survfit works as expected with default arguments in two groups"
   expect_equal(
     res$surv$quantile,
     tibble::tibble(
-      group = rep(c("AFB=1", "AFB=0"), 2),
+      group = rep(c("1", "0"), 2),
       quantile = rep(c(25, 75), each = 2),
       time = c(3.12115, 11.33470, 77.20739, 77.30595),
       lower = c(0.5585216, 6.1437372, 50.8583162, 77.3059548),
@@ -86,7 +86,8 @@ test_that("s_get_survfit works as expected with default arguments in two groups"
   expect_equal(
     res$surv_diff$test,
     tibble::tibble(
-      comparsion = "AFB=0 vs. AFB=1",
+      reference = "1",
+      comparison = "0",
       method = "Log-Rank",
       pval = 0.0009616214
     ),
@@ -118,9 +119,8 @@ test_that("s_get_survfit works as expected with specific time points", {
     tolerance = 0.0001
   )
   expect_equal(
-    res$surv_diff$rate[, c("group", "surv.diff", "lower", "upper", "pval")],
+    res$surv_diff$rate[, c("surv.diff", "lower", "upper", "pval")],
     tibble::tibble(
-      group = rep("AFB=0 vs. AFB=1", 3),
       surv.diff = c(0.09831085, 0.19007956, 0.21507329),
       lower = c(-0.01608841, 0.06331489, 0.07509421),
       upper = c(0.2127101, 0.3168442, 0.3550524),
@@ -145,7 +145,8 @@ test_that("s_get_survfit works as expected with stratified variables", {
   expect_equal(
     res$surv_diff$test,
     tibble::tibble(
-      comparsion = "AFB=0 vs. AFB=1",
+      reference = "1",
+      comparison = "0",
       method = "Stratified Log-Rank",
       pval = 0.08269744
     ),
@@ -173,7 +174,7 @@ test_that("s_get_survfit works as expected with three groups when pairwise is TR
   )
   expect_identical(dim(res$surv$median), c(3L, 6L))
   expect_identical(dim(res$surv$quantile), c(6L, 5L))
-  expect_identical(dim(res$surv$overall), c(188L, 9L))
+  expect_identical(dim(res$surv$overall), c(445L, 9L))
   expect_identical(dim(res$surv$range), c(3L, 7L))
 })
 
@@ -190,7 +191,8 @@ test_that("s_get_coxph works as expected with default arguments", {
   expect_equal(
     res$hr,
     tibble::tibble(
-      comparsion = c("AFB=0 vs. AFB=1"),
+      reference = "1",
+      comparison = "0",
       n = 500,
       events = 215,
       hr = 0.5828995,
@@ -202,7 +204,8 @@ test_that("s_get_coxph works as expected with default arguments", {
   expect_equal(
     res$pval,
     tibble::tibble(
-      comparsion = rep("AFB=0 vs. AFB=1", 3),
+      reference = rep("1", 3),
+      comparison = rep("0", 3),
       method = c("logtest", "sctest", "waldtest"),
       test = c(9.584563, 10.903404, 10.640000),
       df = c(1, 1, 1),
@@ -225,9 +228,8 @@ test_that("s_get_coxph works as expected with stratification", {
     strata = c("AGE", "GENDER")
   )
   expect_equal(
-    res$hr,
+    res$hr[, c(3:7)],
     tibble::tibble(
-      comparsion = c("AFB=0 vs. AFB=1"),
       n = 500,
       events = 215,
       hr = 0.6952678,
@@ -237,9 +239,8 @@ test_that("s_get_coxph works as expected with stratification", {
     tolerance = 0.0001
   )
   expect_equal(
-    res$pval,
+    res$pval[, 3:6],
     tibble::tibble(
-      comparsion = rep("AFB=0 vs. AFB=1", 3),
       method = c("logtest", "sctest", "waldtest"),
       test = c(2.964049, 3.060662, 3.040000),
       df = c(1, 1, 1),

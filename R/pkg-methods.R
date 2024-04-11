@@ -79,151 +79,170 @@ print.or_ci <- function(x, ...) {
 #' @describeIn s_get_survfit prints survival analysis summary from `survfit`.
 #' @exportS3Method
 #' @keywords internal
-print.s_survival <- function(x, ...) {
+#' @param fm (`string`)\cr string of unit for survival time.
+print.s_survival <- function(x, fm = "months", ...) {
   cat("Surv formula: ", x$params$formula, "\n", sep = "")
-  cat("Group by: ", paste(unique(x$surv$quantile$group), collapse = ", "), "\n", sep = "")
+  grp <- unique(x$surv$quantile$group)
+  cat("Group by: ", paste(grp, collapse = ", "), "\n", sep = "")
   if (!is.null(x$params$strata)) {
     cat("Stratified by: ", paste(x$params$strata, collapse = ", "), "\n", sep = "")
   }
   cat("Confidence interval type: ", x$params$conf_type, "\n", sep = "")
 
-  cat("\n---\n")
-  cat("Time to Event:\n")
-  med <- x$surv$median %>%
-    rowwise() %>%
-    mutate(
-      `n(event)` = format_value(c(.data$n, .data$events), format = "xx (xx)"),
-      Median = paste(
-        format_value(.data$median, format = "xx.xx"),
-        format_value(c(.data$lower, .data$upper),
-          format = "(xx.xx, xx.xx)"
-        )
-      )
-    ) %>%
-    select("group", "n(event)", "Median")
-  quant <- x$surv$quantile %>%
-    rowwise() %>%
-    mutate(
-      surv = paste(
-        format_value(.data$time, format = "xx.xx"),
-        format_value(c(.data$lower, .data$upper),
-          format = "(xx.xx, xx.xx)"
-        )
-      )
-    ) %>%
-    tidyr::pivot_wider(
-      id_cols = "group",
-      names_from = "quantile",
-      names_glue = "Q{quantile}",
-      values_from = "surv"
-    )
-  rang <- x$surv$range %>%
-    rowwise() %>%
-    mutate(
-      `Range.event` = format_value(c(.data$event_min, .data$event_max),
-        format = "(xx.x, xx.x)"
-      ),
-      `Range.censor` = format_value(c(.data$censor_min, .data$censor_max),
-        format = "(xx.x, xx.x)"
-      ),
-      `Range` = format_value(c(.data$min, .data$max),
-        format = "(xx.x, xx.x)"
-      )
-    ) %>%
-    select("group", "Range.event", "Range.censor", "Range")
-  list(med, quant, rang) %>%
-    purrr::reduce(full_join, by = "group") %>%
-    tidyr::pivot_longer(cols = -1, values_to = "Value", names_to = "Stat") %>%
-    tidyr::pivot_wider(names_from = "group", values_from = "Value") %>%
-    tibble::column_to_rownames(var = "Stat") %>%
-    print(right = FALSE)
-  cat("\n")
+  grp_var <- x$params$var
+  df <- x$data
+  ref_col <- grp[1]
+  comp_col <- grp[-1]
+  pval_name <- ifelse(x$params$rho == 0, "log-rank", "peto & peto")
 
-
-  if (!is.null(x$surv$time_point)) {
-    cat("---\n")
-    cat(
-      "At Specified Time Points (",
-      paste(unique(x$surv$time_point$time), collapse = ", "), "):\n",
-      sep = ""
-    )
-    x$surv$time_point %>%
-      rowwise() %>%
+  a_count_subjd <- function(df, .var, .N_col, res) {
+    surv_med <- res$surv$median %>%
       mutate(
-        `No. at risk` = as.character(.data$n.risk),
-        `No. event` = as.character(.data$n.event),
-        `No. consor` = as.character(.data$n.censor),
-        `Event-free rate` = paste(
-          format_value(.data$surv, format = "xx.xxx"),
-          format_value(c(.data$lower, .data$upper),
-            format = "(xx.xxx, xx.xxx)"
-          )
-        )
+        censors = .data$n - .data$events
       ) %>%
-      select(
-        "time", "No. at risk", "No. event",
-        "No. consor", "Event-free rate", "group"
-      ) %>%
-      ungroup() %>%
-      dplyr::group_split(.data$time) %>%
-      purrr::walk(.f = function(dt) {
-        dt %>%
-          select(-1) %>%
-          tidyr::pivot_longer(cols = -c("group"), values_to = "Value", names_to = "Stat") %>%
-          tidyr::pivot_wider(names_from = "group", values_from = "Value") %>%
-          tibble::column_to_rownames(var = "Stat") %>%
-          print(right = FALSE)
-        cat("\n")
-      })
-  }
-
-  if (!is.null(x$surv_diff$rate)) {
-    cat("---\n")
-    cat(
-      "Difference of Event-free Rate at Specified Time Points (",
-      paste(unique(x$surv$time_point$time), collapse = ","), "):\n",
-      sep = ""
+      tibble::column_to_rownames(var = "group")
+    ind <- grep(df[[.var]][1], row.names(surv_med), fixed = TRUE)
+    in_rows(
+      "Number of events" = rcell(
+        surv_med$events[ind] * c(1, 1 / .N_col),
+        format = "xx (xx.xx%)"
+      ),
+      "Number of consered" = rcell(
+        surv_med$censors[ind] * c(1, 1 / .N_col),
+        format = "xx (xx.xx%)"
+      )
     )
-    x$surv_diff$rate %>%
-      rowwise() %>%
-      mutate(
-        `Diff` = paste(
-          format_value(.data$surv.diff, format = "xx.xxx"),
-          format_value(c(.data$lower, .data$upper),
-            format = "(xx.xxx, xx.xxx)"
-          )
-        ),
-        `p-value` = format_value(.data$pval, "x.xxxx | (<0.0001)")
-      ) %>%
-      select(
-        "time", "Diff", "p-value", "group"
-      ) %>%
-      ungroup() %>%
-      dplyr::group_split(.data$time) %>%
-      purrr::walk(.f = function(dt) {
-        dt %>%
-          select(-1) %>%
-          tidyr::pivot_longer(cols = -c("group"), values_to = "Value", names_to = "Stat") %>%
-          tidyr::pivot_wider(names_from = "group", values_from = "Value") %>%
-          tibble::column_to_rownames(var = "Stat") %>%
-          print(right = FALSE)
-        cat("\n")
-      })
   }
 
-  method <- if (x$params$rho == 0) {
-    "Log-Rank"
-  } else if (x$params$rho == 1) {
-    "Peto & Peto"
+  a_surv_time_func <- function(df, .var, res) {
+    med_tb <- res$surv$median %>%
+      tibble::column_to_rownames(var = "group")
+    quant_tb <- res$surv$quantile %>%
+      tidyr::pivot_longer(cols = -c(1, 2), values_to = "Value", names_to = "Stat") %>%
+      tidyr::pivot_wider(
+        id_cols = "group",
+        names_from = c("quantile", "Stat"),
+        names_glue = "Q{quantile}_{Stat}",
+        values_from = c("Value")
+      ) %>%
+      tibble::column_to_rownames(var = "group")
+    range_tb <- res$surv$range %>%
+      tibble::column_to_rownames(var = "group")
+    ind <- grep(df[[.var]][1], row.names(med_tb), fixed = TRUE)
+    med_time <- list(med_tb[ind, c("median", "lower", "upper")])
+    quantile_time <- lapply(c(res$params$quantile * 100), function(x) {
+      unlist(c(quant_tb[ind, grep(paste0("Q", x), names(quant_tb))]))
+    })
+    range_time <- list(range_tb[ind, c("min", "max")])
+    in_rows(
+      .list = c(med_time, quantile_time, range_time),
+      .names = c(
+        "Median (95% CI)",
+        paste0(c(res$params$quantile * 100), "th percentile (95% CI)", sep = ""),
+        "Min, Max"
+      ),
+      .formats = c(
+        "xx.xx (xx.xx - xx.xx)",
+        rep("xx.xx (xx.xx - xx.xx)", length(res$params$quantile)),
+        "(xx.xx, xx.xx)"
+      )
+    )
   }
+
+  tbl <- basic_table(
+    show_colcounts = TRUE
+  ) %>%
+    split_cols_by(grp_var, ref_group = ref_col) %>%
+    analyze(grp_var, a_count_subjd,
+      show_labels = "hidden",
+      extra_args = list(res = x)
+    ) %>%
+    analyze(grp_var, a_surv_time_func,
+      var_labels = "Time to event (months)", show_labels = "visible",
+      extra_args = list(res = x),
+      table_names = "kmtable"
+    )
+
   if (!is.null(x$surv_diff$test)) {
-    cat("---\n")
-    cat("Hypothesis Testing with ", method, ":\n", sep = "")
-    x$surv_diff$test %>%
-      tidyr::pivot_wider(names_from = "comparsion", values_from = "pval") %>%
-      tibble::column_to_rownames(var = "method") %>%
-      print(right = FALSE)
+    a_surv_pval_func <- function(df, .var, .in_ref_col, res) {
+      curgrp <- df[[.var]][1]
+      pval_tb <- res$surv_diff$test %>%
+        filter(.data$reference == ref_col & .data$comparison == curgrp)
+      in_rows(
+        "P-value" = non_ref_rcell(
+          pval_tb[["pval"]],
+          .in_ref_col,
+          format = "x.xxxx | (<0.0001)"
+        )
+      )
+    }
+    tbl <- tbl %>%
+      analyze(grp_var, a_surv_pval_func,
+        var_labels = paste(
+          ifelse(is.null(x$params$strata), "Unstratified", "Stratified"),
+          paste(pval_name, "test")
+        ),
+        show_labels = "visible",
+        extra_args = list(res = x),
+        table_names = "logrank"
+      )
   }
+
+  if (!is.null(x$params$time_point)) {
+    a_surv_rate_func <- function(df, .var, .in_ref_col, rate_tb, rate_diff_tb) {
+      curgrp <- df[[.var]][1]
+      rate_diff_tb <- rate_diff_tb %>%
+        filter(.data$reference == ref_col & .data$comparison == curgrp)
+      ind <- grep(df[[.var]][1], row.names(rate_tb), fixed = TRUE)
+      in_rows(
+        rcell(rate_tb[ind, "n.risk", drop = TRUE], format = "xx"),
+        rcell(rate_tb[ind, "surv", drop = TRUE], format = "xx.xxx"),
+        rcell(unlist(rate_tb[ind, c("lower", "upper"), drop = TRUE]), format = "(xx.xxx, xx.xxx)"),
+        non_ref_rcell(
+          rate_diff_tb[, "surv.diff", drop = TRUE],
+          .in_ref_col,
+          format = "xx.xxx"
+        ),
+        non_ref_rcell(
+          unlist(rate_diff_tb[, c("lower", "upper"), drop = TRUE]),
+          .in_ref_col,
+          format = "(xx.xxx, xx.xxx)",
+          indent_mod = 1L
+        ),
+        non_ref_rcell(
+          rate_diff_tb[, "pval", drop = TRUE],
+          .in_ref_col,
+          format = "x.xxxx | (<0.0001)",
+          indent_mod = 1L
+        ),
+        .names = c(
+          "Number at risk",
+          "Event-free rate", "95% CI",
+          "Difference in Event Free Rate", "95% CI",
+          "p-value (Z-test)"
+        )
+      )
+    }
+
+    time_point <- x$params$time_point
+    surv_rate <- x$surv$time_point %>%
+      split(as.formula("~time")) %>%
+      purrr::map(\(df) tibble::column_to_rownames(df, var = "group"))
+    surv_rate_diff <- x$surv_diff$rate %>%
+      split(as.formula("~time"))
+    for (i in seq_along(time_point)) {
+      tbl <- tbl |>
+        analyze(grp_var, a_surv_rate_func,
+          var_labels = paste(time_point[i], fm), show_labels = "visible",
+          extra_args = list(rate_tb = surv_rate[[i]], rate_diff_tb = surv_rate_diff[[i]]),
+          table_names = paste0("timepoint_", time_point[i])
+        )
+    }
+  }
+
+  result <- tbl %>%
+    build_table(df)
+  print(result)
 
   invisible(x)
 }
@@ -233,55 +252,85 @@ print.s_survival <- function(x, ...) {
 #' @keywords internal
 print.s_coxph <- function(x, ...) {
   cat("Surv formula: ", x$params$formula, "\n", sep = "")
-  cat("Group by: ", paste(x$params$group, collapse = ", "), "\n", sep = "")
+  grp <- x$params$group
+  cat("Group by: ", paste(grp, collapse = ", "), "\n", sep = "")
   if (!is.null(x$params$strata)) {
     cat("Stratified by: ", paste(x$params$strata, collapse = ", "), "\n", sep = "")
   }
   cat("Tie method: ", x$params$ties, "\n", sep = "")
-  cat("P-value method for HR: ",
-    switch(x$params$pval_method,
-      all = paste(c("logtest", "sctest", "waldtest"), collapse = ", "),
-      log = "logtest",
-      sc = "sctest",
-      wald = "waldtest"
-    ),
-    "\n",
-    sep = ""
+  pval_name <- switch(x$params$pval_method,
+    all = c("logtest", "sctest", "waldtest"),
+    log = "logtest",
+    sc = "sctest",
+    wald = "waldtest"
   )
+  cat("P-value method for HR: ", paste(pval_name, collapse = ", "), "\n\n", sep = "")
 
-  cat("\n---\n")
-  cat("Estimation of Hazard Ratio",
-    ifelse(!is.null(x$params$strata), " with Stratification", ""), ":\n",
-    sep = ""
-  )
-  hr <- x$hr %>%
-    rowwise() %>%
-    mutate(
-      `n(event)` = format_value(c(.data$n, .data$events), format = "xx (xx)"),
-      `Hazard Ratio` = format_value(c(.data$hr, .data$lower, .data$upper),
-        format = "xx.xx (xx.xx - xx.xx)"
+  grp_var <- x$params$var
+  df <- x$data
+  ref_col <- grp[1]
+
+  a_hr_func <- function(df, .var, .in_ref_col, res) {
+    if (.in_ref_col) {
+      ret <- replicate(2 + length(pval_name), list(rcell(NULL)))
+    } else {
+      curgrp <- df[[.var]][1]
+      hr_tb <- res$hr %>%
+        filter(.data$reference == ref_col & .data$comparison == curgrp)
+      pval_tb <- res$pval %>%
+        filter(.data$reference == ref_col & .data$comparison == curgrp)
+      ret <- list(
+        non_ref_rcell(
+          hr_tb[, "hr", drop = TRUE],
+          .in_ref_col,
+          format = "xx.xx"
+        ),
+        non_ref_rcell(
+          unlist(hr_tb[, c("lower", "upper"), drop = TRUE]),
+          .in_ref_col,
+          format = "(xx.xx, xx.xx)"
+        )
       )
-    ) %>%
-    select("comparsion", "n(event)", "Hazard Ratio")
-  pval <- x$pval %>%
-    rowwise() %>%
-    mutate(
-      pval = format_value(.data$pval, "x.xxxx | (<0.0001)")
-    ) %>%
-    select("comparsion", "method", "pval") %>%
-    tidyr::pivot_wider(
-      id_cols = "comparsion",
-      names_from = "method",
-      names_glue = "p-value ({method})",
-      values_from = "pval"
+      for (i in seq_along(pval_name)) {
+        ret <- c(
+          ret,
+          non_ref_rcell(
+            pval_tb[, "pval", drop = TRUE][i],
+            .in_ref_col,
+            format = "x.xxxx | (<0.0001)"
+          )
+        )
+      }
+    }
+    in_rows(
+      .list = ret,
+      .names = c(
+        "Hazard Ratio", "95% CI",
+        paste0("p-value (", pval_name, ")")
+      ),
+      .formats = c(
+        "xx.xx",
+        "(xx.xx, xx.xx)",
+        rep("x.xxxx | (<0.0001)", length(pval_name))
+      )
     )
+  }
 
-  list(hr, pval) %>%
-    purrr::reduce(full_join, by = "comparsion") %>%
-    tidyr::pivot_longer(cols = -1, values_to = "Value", names_to = "Stat") %>%
-    tidyr::pivot_wider(names_from = "comparsion", values_from = "Value") %>%
-    tibble::column_to_rownames(var = "Stat") %>%
-    print(right = FALSE)
+  result <- basic_table(
+    show_colcounts = TRUE
+  ) %>%
+    split_cols_by(grp_var, ref_group = ref_col) %>%
+    analyze(grp_var, a_hr_func,
+      var_labels = paste(
+        ifelse(is.null(x$params$strata), "Unstratified", "Stratified"),
+        "Analysis"
+      ),
+      show_labels = "visible",
+      extra_args = list(res = x),
+      table_names = "coxph"
+    ) %>%
+    build_table(df)
+  print(result)
 
   invisible(x)
 }
