@@ -33,10 +33,10 @@ NULL
 #' @param var (`string`)\cr target variable name for estimation.
 #' @param by (`string`)\cr a optional variable to group by. If null, use the whole data.
 #' @param by.level (`vector`)\cr an optional vector for encoding `var` as a factor
-#'  and the second level will be as the reference group. If null, use the default
+#'  and the first level will be as the reference group. If null, use the default
 #'  order to encode.
-#' @param event (`numeric` or `character`)\cr an option to define which one as the
-#'  event in the elements of `var`. By default, the positive and maximal one if
+#' @param resp (`numeric` or `character`)\cr an option to define which one as the
+#'  respondor in the elements of `var`. By default, the positive and maximal one if
 #'  the `var` variable is numeric, or the first one of if the `var` variable is
 #'  character/factor.
 #' @param conf.level (`numeric`)\cr significance level for the returned confidence
@@ -51,6 +51,33 @@ NULL
 #'    must be one of "two.sided" (default), "greater" or "less".
 #' @param ... other arguments to be passed to [DescTools::BinomCI].
 #'
+#' @references
+#' SAS code for your reference with consistent results.
+#'
+#' - The rate and difference of proportions are estimated:
+#' ```
+#' proc means data=dta noprint;
+#'   class trtp orr strata1 strata2 strata3;
+#'   types trtp*orr*strata1*strata2*strata3;
+#'   output out=mat(drop=_type_ rename=_freq_=count);
+#' run;
+#'
+#' ods listing close;
+#' proc freq data=mat;
+#'   by trtp;
+#'   weight count/zeros;
+#'   tables orr /binomial(level="1") alpha=0.05;
+#'   exact binomial;
+#'   ods output binomial=orrci;
+#' run;
+#'
+#' proc freq data=mat(where=(trtp in ('PBO' 'TRT1')));
+#'   weight count/zeros;
+#'   tables trtp*orr /riskdiff(CL=wald column=1) alpha=0.05;
+#'   ods output PdiffCLs=diff;
+#'   run;
+#' ods listing;
+#' ```
 #'
 #' @return
 #' * `s_propci` returns an object of class `prop_ci` that is a list contains
@@ -61,11 +88,11 @@ NULL
 #' @examples
 #' set.seed(12)
 #' dta <- data.frame(
-#'   orr = sample(c(1, 0), 100, TRUE),
-#'   trtp = factor(rep(c("TRT", "PBO"), each = 50)),
-#'   strata1 = factor(sample(c("A", "B"), 100, TRUE)),
-#'   strata2 = factor(sample(c("C", "D"), 100, TRUE)),
-#'   strata3 = factor(sample(c("E", "F"), 100, TRUE))
+#'   orr = sample(c(1, 0), 150, TRUE),
+#'   trtp = factor(rep(c("TRT1", "TRT2", "PBO"), each = 50)),
+#'   strata1 = factor(sample(c("A", "B"), 150, TRUE)),
+#'   strata2 = factor(sample(c("C", "D"), 150, TRUE)),
+#'   strata3 = factor(sample(c("E", "F"), 150, TRUE))
 #' )
 #'
 #' # not having by variable:
@@ -74,12 +101,12 @@ NULL
 #' # two levels of by variable:
 #' s_propci(dta, var = "orr", by = "trtp")
 #' # opposite order of trtp with above:
-#' s_propci(dta, var = "orr", by = "trtp", by.level = c("TRT", "PBO"), event = 1)
+#' s_propci(dta, var = "orr", by = "trtp", by.level = c("TRT1", "TRT2", "PBO"), resp = 1)
 s_propci <- function(data,
                      var,
                      by = NULL,
                      by.level = NULL,
-                     event = NULL,
+                     resp = NULL,
                      conf.level = 0.95,
                      method = c(
                        "clopper-pearson", "wald", "waldcc", "wilson",
@@ -95,7 +122,7 @@ s_propci <- function(data,
   assert_class(data, "data.frame")
   assert_subset(var, names(data), empty.ok = FALSE)
   assert_subset(by, names(data))
-  assert_subset(event, data[[var]])
+  assert_subset(resp, data[[var]])
   assert_number(conf.level, lower = 0, upper = 1)
   method <- match.arg(method, c(
     "clopper-pearson", "wald", "waldcc", "wilson", "wilsoncc",
@@ -109,13 +136,13 @@ s_propci <- function(data,
     "two.sided", "less", "greater"
   ), several.ok = FALSE)
 
-  object <- h_prep_prop(data, var = var, by = by, by.level = by.level, event = event)
+  object <- h_prep_prop(data, var = var, by = by, by.level = by.level, resp = resp)
   by <- object$by
 
   est_res <- object$data %>%
     count(!!sym(by), !!sym(var)) %>%
     add_count(!!sym(by), wt = .data$n, name = "tot") %>%
-    filter(!!sym(var) == object$event) %>%
+    filter(!!sym(var) == object$resp) %>%
     split(as.formula(paste("~", by))) %>%
     purrr::map(function(x) {
       tibble::tibble(
@@ -131,21 +158,30 @@ s_propci <- function(data,
     purrr::list_rbind()
 
   diff_res <- if (!is.null(object$by.level)) {
-    object$data %>%
-      count(!!sym(by), !!sym(var)) %>%
-      add_count(!!sym(by), wt = .data$n, name = "tot") %>%
-      filter(!!sym(var) == object$event) %>%
-      tidyr::pivot_wider(names_from = by, values_from = c("n", "tot")) %>%
-      split(as.formula(paste("~", var))) %>%
+    grps <- object$by.level
+    bylist <- t(combn(grps, 2))[which(t(combn(grps, 2))[, 1] == grps[1]), , drop = FALSE]
+    split(bylist, 1:nrow(bylist)) %>%
       purrr::map(function(x) {
+        res <- filter(object$data, !!sym(by) %in% x) %>%
+          count(!!sym(by), !!sym(var)) %>%
+          add_count(!!sym(by), wt = .data$n, name = "tot") %>%
+          filter(!!sym(var) == object$resp) %>%
+          tidyr::pivot_wider(names_from = by, values_from = c("n", "tot"))
+        chisq <- stats::prop.test(
+          x = as.numeric(res[1, grep("n_", colnames(res)), drop = TRUE]),
+          n = as.numeric(res[1, grep("tot_", colnames(res)), drop = TRUE]),
+          correct = FALSE
+        )
         tibble::tibble(
-          group = paste0(object$by.level, collapse = " - "),
+          reference = x[1],
+          comparison = x[2],
           tibble::as_tibble(
             DescTools::BinomDiffCI(
-              x1 = x[[2]], n1 = x[[4]], x2 = x[[3]], n2 = x[[5]],
+              x1 = res[[3]], n1 = res[[5]], x2 = res[[2]], n2 = res[[4]],
               method = diff.method, sides = alternative, conf.level = conf.level
             )
-          )
+          ),
+          pval = chisq$p.value
         )
       }) %>%
       purrr::list_rbind()
@@ -153,13 +189,14 @@ s_propci <- function(data,
 
   structure(
     list(
+      data = object$data,
       prop_est = est_res,
       prop_diff = diff_res,
       params = list(
         var = var,
         by = by,
         by.level = object$by.level,
-        event = object$event,
+        resp = object$resp,
         conf.level = conf.level,
         method = method,
         diff.method = diff.method,
@@ -191,6 +228,31 @@ s_propci <- function(data,
 #' @param exact (`logical`)\cr a logical indicating whether the Mantel-Haenszel
 #'  test or the exact conditional test (given the strata margins) should be computed.
 #'
+#' @references
+#' - The common odds ratio and stratified odds ratio with CMH test and conditional logistic are estimated:
+#' ```
+#' ods listing close;
+#'   proc freq data=mat(where=(trtp in ('PBO' 'TRT1')));
+#'   weight count/zeros;
+#'   tables trtp*orr / relrisk chisq;
+#'   ods output ChiSq=pval RelativeRisks=ci;
+#' run;
+#'
+#' proc freq data=mat(where=(trtp in ('PBO' 'TRT1')));
+#'   weight count/zeros;
+#'   tables strata1*strata2*strata3*trtp*orr / relrisk cmh;
+#'   ods output cmh=cmhpval CommonRelRisks=cmhci;
+#' run;
+#'
+#' proc logistic data=mat;
+#'   freq count;
+#'   class trtp strata1 strata2 strata3 / param=ref ref=first;
+#'   strata strata1 strata2 strata3;
+#'   model orr(event='1')=trtp;
+#' run;
+#' ods listing;
+#' ```
+#'
 #' @return
 #' * `s_odds_ratio` returns an object of class `or_ci` that is a list contains
 #' odds ratio with or without stratification and input arguments.
@@ -215,6 +277,7 @@ s_propci <- function(data,
 #' s_odds_ratio(
 #'   dta,
 #'   var = "orr", by = "trtp",
+#'   or.glm = TRUE,
 #'   strata = c("strata1", "strata2", "strata3"),
 #'   strata.method = "clogit"
 #' )
@@ -222,7 +285,7 @@ s_odds_ratio <- function(data,
                          var,
                          by,
                          by.level = NULL,
-                         event = NULL,
+                         resp = NULL,
                          strata = NULL,
                          conf.level = 0.95,
                          or.glm = FALSE,
@@ -233,7 +296,7 @@ s_odds_ratio <- function(data,
   assert_class(data, "data.frame")
   assert_subset(var, names(data), empty.ok = FALSE)
   assert_subset(by, names(data), empty.ok = FALSE)
-  assert_subset(event, data[[var]])
+  assert_subset(resp, data[[var]])
   assert_subset(strata, names(data))
   assert_number(conf.level, lower = 0, upper = 1)
   assert_logical(or.glm)
@@ -242,10 +305,17 @@ s_odds_ratio <- function(data,
   or.method <- match.arg(or.method, c("wald", "mle", "midp"), several.ok = FALSE)
   strata.method <- match.arg(strata.method, c("CMH", "clogit"), several.ok = FALSE)
 
-  object <- h_prep_prop(data, var = var, by = by, by.level = by.level, event = event)
-  if (length(object$by.level) != 2) {
-    stop("The by.level should have two levels as input.")
-  }
+  object <- h_prep_prop(data, var = var, by = by, by.level = by.level, resp = resp)
+
+  mat <- object$data %>%
+    count(!!sym(by), !!sym(var)) %>%
+    arrange(!!sym(var) == object$resp, !!sym(by)) %>%
+    tidyr::pivot_wider(names_from = var, values_from = "n") %>%
+    tibble::column_to_rownames(var = by) %>%
+    as.matrix()
+
+  grps <- object$by.level
+  bylist <- t(combn(grps, 2))[which(t(combn(grps, 2))[, 1] == grps[1]), , drop = FALSE]
 
   or_res <- if (or.glm) {
     mod <- stats::glm(
@@ -253,44 +323,59 @@ s_odds_ratio <- function(data,
       data = object$data,
       family = stats::binomial(link = "logit")
     )
-    exp(c(coef(mod)[-1], confint(mod, level = conf.level)[-1, ]))
+    data.frame(
+      exp(c(coef(mod)[-1])),
+      exp(confint(mod, level = conf.level)[-1, ]),
+      coef(summary(mod))[-1, "Pr(>|z|)"]
+    ) %>%
+      mutate(group = sub(by, "", row.names(.)))
   } else {
-    object$data %>%
-      count(!!sym(by), !!sym(var)) %>%
-      arrange(!!sym(var) == object$event, !!sym(by)) %>%
-      tidyr::pivot_wider(names_from = var, values_from = "n") %>%
-      tibble::column_to_rownames(var = by) %>%
-      as.matrix() %>%
-      # follow the preferred 2x2 table structure
-      DescTools::OddsRatio(method = or.method, conf.level = conf.level)
+    split(bylist, 1:nrow(bylist)) %>%
+      purrr::map(function(x) {
+        data.frame(
+          t(DescTools::OddsRatio(mat[x, ], method = or.method, conf.level = conf.level)),
+          pval = fisher.test(mat[x, ], conf.level = conf.level)$p.value,
+          stringsAsFactors = FALSE
+        ) %>%
+          mutate(group = x[2])
+      }) %>%
+      purrr::list_rbind()
   }
   or_res <- tibble::tibble(
-    !!!setNames(or_res, c("or.est", "lwr.ci", "upr.ci"))
+    !!!setNames(or_res[, c(5, 1:4)], c("group", "or.est", "lwr.ci", "upr.ci", "pval"))
   )
 
   stra_or_res <- if (!is.null(strata)) {
     if (strata.method == "CMH") {
-      assert_set_equal(length(unique(data[[var]])), 2)
-      tab <- stats::xtabs(
-        as.formula(paste("~", paste(c(by, var, strata), collapse = "+"))),
-        data = data
-      )
-      # get the number of factors for each stratification
-      grpn <- strata %>%
-        purrr::map(~ count(data, data[[.x]])) %>%
-        purrr::map_int(nrow)
-      tb <- as.table(array(c(tab), dim = c(2, 2, prod(grpn))))
-      mod <- stats::mantelhaen.test(
-        tb,
-        conf.level = conf.level,
-        correct = correct, exact = exact
-      )
-      tibble::tibble(
-        !!!setNames(
-          c(mod$estimate, mod$conf.int, mod$p.value),
-          c("or.est", "lwr.ci", "upr.ci", "pval")
-        )
-      )
+      split(bylist, 1:nrow(bylist)) %>%
+        purrr::map(function(x) {
+          df <- filter(data, !!sym(by) %in% x) %>%
+            mutate(
+              !!sym(by) := droplevels(!!sym(by))
+            )
+          tab <- stats::xtabs(
+            as.formula(paste("~", paste(c(by, var, strata), collapse = "+"))),
+            data = df
+          )
+          # get the number of factors for each stratification
+          grpn <- strata %>%
+            purrr::map(~ count(df, df[[.x]])) %>%
+            purrr::map_int(nrow)
+          tb <- as.table(array(c(tab), dim = c(2, 2, prod(grpn))))
+          mod <- stats::mantelhaen.test(
+            tb,
+            conf.level = conf.level,
+            correct = correct, exact = exact
+          )
+          tibble::tibble(
+            group = x[2],
+            or.est = mod$estimate,
+            lwr.ci = mod$conf.int[1],
+            upr.ci = mod$conf.int[2],
+            pval = mod$p.value
+          )
+        }) %>%
+        purrr::list_rbind()
     } else {
       mod <- survival::clogit(
         formula = as.formula(paste0(
@@ -300,18 +385,14 @@ s_odds_ratio <- function(data,
         data = data
       )
 
-      # defaultly the first level is regarded as the reference
-      names(coef(mod)) %>%
-        purrr::map(
-          ~ data.frame(
-            or.est = exp(coef(mod)[.x]),
-            lwr.ci = exp(confint(mod, level = conf.level)[.x, 1]),
-            upr.ci = exp(confint(mod, level = conf.level)[.x, 2]),
-            row.names = gsub(pattern = paste0("^", by), x = .x, "")
-          )
-        ) %>%
-        purrr::list_rbind() %>%
-        tibble::tibble()
+      # default the first level is regarded as the reference
+      tibble::tibble(
+        group = gsub(pattern = paste0("^", by), x = names(coef(mod)), ""),
+        or.est = exp(coef(mod)),
+        lwr.ci = exp(confint(mod, level = conf.level)[, 1]),
+        upr.ci = exp(confint(mod, level = conf.level)[, 2]),
+        pval = coef(summary(mod))[, "Pr(>|z|)"]
+      )
     }
   } else {
     NULL
@@ -319,13 +400,14 @@ s_odds_ratio <- function(data,
 
   structure(
     list(
+      data = object$data,
       or = or_res,
       strata_or = stra_or_res,
       params = list(
         var = var,
         by = by,
         by.level = object$by.level,
-        event = object$event,
+        resp = object$resp,
         strata = strata,
         conf.level = conf.level,
         or.method = ifelse(or.glm, "logit", or.method),
@@ -337,52 +419,5 @@ s_odds_ratio <- function(data,
       )
     ),
     class = "or_ci"
-  )
-}
-
-
-# h_prep_prop ----
-
-#' @describeIn prop_odds_ratio Helper Function for Pre-processing Proportion Data.
-#'
-#' @export
-#'
-h_prep_prop <- function(data,
-                        var,
-                        by,
-                        by.level,
-                        event) {
-  if (is.null(by)) {
-    by <- "Total"
-    data[[by]] <- "Total"
-  } else {
-    if (!is.null(by.level)) {
-      assert_set_equal(by.level, as.character(unique(data[[by]])))
-      data[[by]] <- factor(data[[by]], levels = by.level)
-    } else {
-      if (is.factor(data[[by]])) {
-        by.level <- levels(data[[by]])
-      } else {
-        data[[by]] <- factor(data[[by]], levels = unique(data[[by]]))
-        by.level <- levels(data[[by]])
-      }
-    }
-  }
-
-  if (is.null(event)) {
-    event <- if (is.numeric(data[[var]])) {
-      max(unique(data[[var]])[unique(data[[var]]) > 0])
-    } else if (is.character(event)) {
-      unique(data[[var]])[1]
-    } else if (is.factor(data[[var]])) {
-      levels(data[[var]])[1]
-    }
-  }
-
-  list(
-    data = data,
-    by = by,
-    by.level = by.level,
-    event = event
   )
 }
