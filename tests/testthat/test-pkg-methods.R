@@ -19,6 +19,81 @@ test_that("print.s_lsmeans works as expected for mmrm", {
   expect_match(res3, "Null hypothesis is θ inferiority to -2", fixed = TRUE)
 })
 
+test_that("print.prop_ci works as expected", {
+  set.seed(12)
+  dta <- data.frame(
+    orr = sample(c(1, 0), 150, TRUE),
+    trtp = factor(rep(c("TRT1", "TRT2", "PBO"), each = 50)),
+    strata1 = factor(sample(c("A", "B"), 150, TRUE)),
+    strata2 = factor(sample(c("C", "D"), 150, TRUE)),
+    strata3 = factor(sample(c("E", "F"), 150, TRUE))
+  )
+  res <- capture_output(print(s_propci(dta, var = "orr", by = "trtp")))
+  expect_match(res, "PBO            TRT1            TRT2", fixed = TRUE)
+  expect_match(res, "Proportion of response", fixed = TRUE)
+  expect_match(res, "95% CI (clopper-pearson)", fixed = TRUE)
+  expect_match(res, "Difference in response", fixed = TRUE)
+  expect_match(res, "95% CI (wald)", fixed = TRUE)
+  expect_match(res, "p-value (Chi-Square Test)", fixed = TRUE)
+
+  res2 <- capture_output(print(s_propci(
+    dta,
+    var = "orr", by = "trtp",
+    by.level = c("TRT1", "TRT2", "PBO")
+  )))
+  expect_match(res2, "TRT1           TRT2             PBO", fixed = TRUE)
+
+  res3 <- capture_output(print(s_propci(
+    dta,
+    var = "orr", by = "trtp",
+    method = "wald",
+    diff.method = "score"
+  )))
+  expect_match(res3, "95% CI (wald)", fixed = TRUE)
+  expect_match(res3, "95% CI (score)", fixed = TRUE)
+})
+
+test_that("print.or_ci works as expected", {
+  set.seed(12)
+  dta <- data.frame(
+    orr = sample(c(1, 0), 150, TRUE),
+    trtp = factor(rep(c("TRT1", "TRT2", "PBO"), each = 50)),
+    strata1 = factor(sample(c("A", "B"), 150, TRUE)),
+    strata2 = factor(sample(c("C", "D"), 150, TRUE)),
+    strata3 = factor(sample(c("E", "F"), 150, TRUE))
+  )
+  res <- capture_output(print(s_odds_ratio(
+    dta,
+    var = "orr", by = "trtp", or.method = "wald"
+  )))
+  expect_match(res, "PBO         TRT1           TRT2", fixed = TRUE)
+  expect_match(res, "Unstratified Analysis", fixed = TRUE)
+  expect_match(res, "Odds Ratio", fixed = TRUE)
+  expect_match(res, "95% CI (wald)", fixed = TRUE)
+  expect_match(res, "p-value (Fisher's Exact Test)", fixed = TRUE)
+
+  res2 <- capture_output(print(s_odds_ratio(
+    dta,
+    var = "orr", by = "trtp",
+    strata = c("strata1", "strata2", "strata3"),
+    strata.method = "CMH",
+    correct = FALSE
+  )))
+  expect_match(res2, "Stratified Analysis", fixed = TRUE)
+  expect_match(res2, "95% CI (CMH)", fixed = TRUE)
+  expect_match(res2, "p-value (CMH Test)", fixed = TRUE)
+
+  res3 <- capture_output(print(s_odds_ratio(
+    dta,
+    var = "orr", by = "trtp",
+    or.glm = TRUE,
+    strata = c("strata1", "strata2", "strata3"),
+    strata.method = "clogit"
+  )))
+  expect_match(res3, "95% CI (clogit)", fixed = TRUE)
+  expect_match(res3, "p-value (clogit Test)", fixed = TRUE)
+})
+
 test_that("print.s_survival works as expected", {
   data("whas500")
   dat <- whas500 %>%

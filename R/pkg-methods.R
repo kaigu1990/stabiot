@@ -156,22 +156,26 @@ print.or_ci <- function(x, ...) {
   ) %>%
     split_cols_by(grp_var, ref_group = ref_col) %>%
     analyze(grp_var, a_or_func,
-            var_labels = "Unstratified Analysis", show_labels = "visible",
-            extra_args = list(res = x$or, ci_method = x$params$or.method,
-                              pval_method = ifelse(
-                                x$params$or.method == "logit", "Wald",
-                                "Fisher's Exact"
-                              )),
-            table_names = "or"
+      var_labels = "Unstratified Analysis", show_labels = "visible",
+      extra_args = list(
+        res = x$or, ci_method = x$params$or.method,
+        pval_method = ifelse(
+          x$params$or.method == "logit", "Wald",
+          "Fisher's Exact"
+        )
+      ),
+      table_names = "or"
     )
 
   if (!is.null(x$strata_or)) {
     rst <- rst %>%
       analyze(grp_var, a_or_func,
-              var_labels = "Stratified Analysis", show_labels = "visible",
-              extra_args = list(res = x$strata_or, ci_method = x$params$strata.method,
-                                pval_method = x$params$strata.method),
-              table_names = "or_strat"
+        var_labels = "Stratified Analysis", show_labels = "visible",
+        extra_args = list(
+          res = x$strata_or, ci_method = x$params$strata.method,
+          pval_method = x$params$strata.method
+        ),
+        table_names = "or_strat"
       )
   }
 

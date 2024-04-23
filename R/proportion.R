@@ -324,17 +324,19 @@ s_odds_ratio <- function(data,
       family = stats::binomial(link = "logit")
     )
     data.frame(
-      exp(c(coef(mod)[-1])),
-      exp(confint(mod, level = conf.level)[-1, ]),
-      coef(summary(mod))[-1, "Pr(>|z|)"]
+      exp(c(coef(mod))),
+      exp(confint(mod, level = conf.level)),
+      coef(summary(mod))[, "Pr(>|z|)"],
+      stringsAsFactors = F
     ) %>%
+      .[-1, ] %>%
       mutate(group = sub(by, "", row.names(.)))
   } else {
     split(bylist, 1:nrow(bylist)) %>%
       purrr::map(function(x) {
         data.frame(
           t(DescTools::OddsRatio(mat[x, ], method = or.method, conf.level = conf.level)),
-          pval = fisher.test(mat[x, ], conf.level = conf.level)$p.value,
+          pval = stats::fisher.test(mat[x, ], conf.level = conf.level)$p.value,
           stringsAsFactors = FALSE
         ) %>%
           mutate(group = x[2])
@@ -369,7 +371,7 @@ s_odds_ratio <- function(data,
           )
           tibble::tibble(
             group = x[2],
-            or.est = mod$estimate,
+            or.est = as.numeric(mod$estimate),
             lwr.ci = mod$conf.int[1],
             upr.ci = mod$conf.int[2],
             pval = mod$p.value
@@ -388,7 +390,7 @@ s_odds_ratio <- function(data,
       # default the first level is regarded as the reference
       tibble::tibble(
         group = gsub(pattern = paste0("^", by), x = names(coef(mod)), ""),
-        or.est = exp(coef(mod)),
+        or.est = as.numeric(exp(coef(mod))),
         lwr.ci = exp(confint(mod, level = conf.level)[, 1]),
         upr.ci = exp(confint(mod, level = conf.level)[, 2]),
         pval = coef(summary(mod))[, "Pr(>|z|)"]
