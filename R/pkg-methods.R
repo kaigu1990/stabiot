@@ -38,15 +38,75 @@ print.s_lsmeans <- function(x, ...) {
 #' @exportS3Method
 #' @keywords internal
 print.prop_ci <- function(x, ...) {
-  cat(sprintf("Proportion and %s confidence interval:", x$params$method))
-  cat("\n")
-  print(x$prop_est)
+  grp_var <- x$params$by
+  var <- x$params$var
+  df <- x$data
+  ref_col <- x$params$by.level[1]
 
-  if (!is.null(x$params$by.level)) {
-    cat(sprintf("\nProportion Difference and %s confidence interval:", x$params$diff.method))
-    cat("\n")
-    print(x$prop_diff)
+  a_prop_func <- function(df, .var, .N_col, .in_ref_col, var_name, res) {
+    prop_est <- res$prop_est %>%
+      tibble::column_to_rownames(var = "group")
+    curgrp <- df[[.var]][1]
+    ind <- grep(curgrp, row.names(prop_est), fixed = TRUE)
+    ret <- list(
+      rcell(
+        sum(df[[var_name]] == res$params$resp) * c(1, 1 / .N_col),
+        format = "xx (xx.xx%)"
+      ),
+      rcell(
+        unlist(prop_est[ind, c("lwr.ci", "upr.ci"), drop = TRUE]),
+        format = "(xx.xx, xx.xx)",
+        indent_mod = 1L
+      )
+    )
+
+    if (!is.null(ref_col)) {
+      prop_diff_est <- res$prop_diff %>%
+        filter(.data$reference == ref_col & .data$comparison == curgrp)
+      ret <- c(
+        ret,
+        list(
+          non_ref_rcell(
+            prop_diff_est[, "est", drop = TRUE],
+            .in_ref_col,
+            format = "xx.xxx"
+          ),
+          non_ref_rcell(
+            unlist(prop_diff_est[, c("lwr.ci", "upr.ci"), drop = TRUE]),
+            .in_ref_col,
+            format = "(xx.xx, xx.xx)",
+            indent_mod = 1L
+          ),
+          non_ref_rcell(
+            prop_diff_est[, "pval", drop = TRUE],
+            .in_ref_col,
+            format = "x.xxxx | (<0.0001)",
+            indent_mod = 1L
+          )
+        )
+      )
+    }
+    in_rows(
+      .list = ret,
+      .names = c(
+        "Proportion of response",
+        paste0("95% CI (", x$params$method, ")"),
+        "Difference in response",
+        paste0("95% CI (", x$params$diff.method, ")"),
+        "p-value (Chi-Square Test)"
+      )
+    )
   }
+  result <- basic_table(
+    show_colcounts = TRUE
+  ) %>%
+    split_cols_by(grp_var, ref_group = ref_col) %>%
+    analyze(grp_var, a_prop_func,
+      show_labels = "hidden",
+      extra_args = list(res = x, var_name = var)
+    ) %>%
+    build_table(df)
+  print(result)
 
   invisible(x)
 }
@@ -55,22 +115,73 @@ print.prop_ci <- function(x, ...) {
 #' @exportS3Method
 #' @keywords internal
 print.or_ci <- function(x, ...) {
-  comp <- paste0(rev(x$params$by.level), collapse = "/")
-  cat(sprintf("Common Odds Ratio (%s) and %s confidence interval:", comp, x$params$or.method))
-  cat("\n")
-  print(x$or)
+  grp_var <- x$params$by
+  var <- x$params$var
+  df <- x$data
+  ref_col <- x$params$by.level[1]
 
-  if (!is.null(x$params$strata)) {
-    cat(sprintf(
-      "\nStratified Odds Ratio (%s) using %s", comp,
-      ifelse(x$params$strata.method == "CMH",
-        "Cochran-Mantel-Haenszel Chi-Squared Test:",
-        "Conditional logistic regression:"
+  a_or_func <- function(df, .var, .in_ref_col, res, ci_method, pval_method) {
+    est_dat <- res %>%
+      tibble::column_to_rownames(var = "group")
+    curgrp <- df[[.var]][1]
+    ind <- grep(curgrp, row.names(est_dat), fixed = TRUE)
+    in_rows(
+      non_ref_rcell(
+        est_dat[ind, "or.est", drop = TRUE],
+        .in_ref_col,
+        format = "xx.xx"
+      ),
+      non_ref_rcell(
+        unlist(est_dat[ind, c("lwr.ci", "upr.ci"), drop = TRUE]),
+        .in_ref_col,
+        format = "(xx.xx, xx.xx)",
+        indent_mod = 1L
+      ),
+      non_ref_rcell(
+        est_dat[ind, "pval", drop = TRUE],
+        .in_ref_col,
+        format = "x.xxxx | (<0.0001)",
+        indent_mod = 1L
+      ),
+      .names = c(
+        "Odds Ratio",
+        paste0("95% CI (", ci_method, ")"),
+        paste0("p-value (", pval_method, " Test)")
       )
-    ))
-    cat("\n")
-    print(x$strata_or)
+    )
   }
+
+  rst <- basic_table(
+    show_colcounts = TRUE
+  ) %>%
+    split_cols_by(grp_var, ref_group = ref_col) %>%
+    analyze(grp_var, a_or_func,
+      var_labels = "Unstratified Analysis", show_labels = "visible",
+      extra_args = list(
+        res = x$or, ci_method = x$params$or.method,
+        pval_method = ifelse(
+          x$params$or.method == "logit", "Wald",
+          "Fisher's Exact"
+        )
+      ),
+      table_names = "or"
+    )
+
+  if (!is.null(x$strata_or)) {
+    rst <- rst %>%
+      analyze(grp_var, a_or_func,
+        var_labels = "Stratified Analysis", show_labels = "visible",
+        extra_args = list(
+          res = x$strata_or, ci_method = x$params$strata.method,
+          pval_method = x$params$strata.method
+        ),
+        table_names = "or_strat"
+      )
+  }
+
+  result <- rst %>%
+    build_table(df)
+  print(result)
 
   invisible(x)
 }
