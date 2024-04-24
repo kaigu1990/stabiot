@@ -23,7 +23,8 @@ s_get_lsmeans(
 \code{emmeans::emmeans()}, such as object from \code{lm} for ANCOVA and \code{mmrm} for MMRM.}
 
 \item{var}{(\code{string})\cr string specifying the name of the predictor, such as
-it would be treatment group variable (TRT01PN) in the clinical trials.}
+it would be treatment group variable (TRT01PN) in the clinical trials. Default
+the first level is defined as reference group.}
 
 \item{by}{(\code{string})\cr string specifying the name of the grouped variable.
 The estimates and contrasts will be evaluated separately for each elements
@@ -83,24 +84,19 @@ There is no any p value adjusted method involved.
 \examples{
 # refactor the level order:
 data(fev_data, package = "mmrm")
-fev_data$ARMCD <- factor(fev_data$ARMCD, level = c("TRT", "PBO"))
 
-# fit mmrm model:
+# fit MMRM model:
 fit <- mmrm::mmrm(
   formula = FEV1 ~ RACE + SEX + ARMCD * AVISIT + us(AVISIT | USUBJID),
   reml = TRUE, method = "Kenward-Roger", vcov = "Kenward-Roger-Linear",
   data = fev_data
 )
 
-# estimate ARMCD within whole visits:
-s_get_lsmeans(fit, "ARMCD")
-
 # estimate ARMCD by visits:
 s_get_lsmeans(fit, "ARMCD", by = "AVISIT")
 
 # estimate ARMCD by visits for superiority testing with null hypothesis of 2:
 s_get_lsmeans(fit, "ARMCD", by = "AVISIT", null = 2, alternative = "greater")
-
 
 # fit ANCOVA model:
 fit2 <- fev_data |>

@@ -28,14 +28,14 @@ test_that("s_get_lsmeans works as expected by visit with default arguments", {
   expect_equal(
     res$lsm_contr[1:2, ],
     tibble::tibble(
-      contrast = factor(c("PBO - TRT", "PBO - TRT")),
+      contrast = factor(c("TRT - PBO", "TRT - PBO")),
       AVISIT = factor(c("VIS1", "VIS2"), levels = c("VIS1", "VIS2", "VIS3", "VIS4")),
-      estimate = c(-3.774230, -3.732304),
+      estimate = c(3.774230, 3.732304),
       SE = c(1.0817635, 0.8633334),
       df = c(145.5520, 145.2771),
-      lower.CL = c(-5.912224, -5.438620),
-      upper.CL = c(-1.636236, -2.025988),
-      t.ratio = c(-3.488960, -4.323131),
+      lower.CL = c(1.636236, 2.025988),
+      upper.CL = c(5.912224, 5.438620),
+      t.ratio = c(3.488960, 4.323131),
       p.value = c(6.417790e-04, 2.840654e-05)
     ),
     tolerance = 0.0001
@@ -44,7 +44,6 @@ test_that("s_get_lsmeans works as expected by visit with default arguments", {
 
 test_that("s_get_lsmeans works as expected for superiority testing with null hypothesis of 2", {
   data(fev_data, package = "mmrm")
-  fev_data$ARMCD <- factor(fev_data$ARMCD, level = c("TRT", "PBO"))
   fit <- mmrm::mmrm(
     formula = FEV1 ~ RACE + SEX + ARMCD * AVISIT + us(AVISIT | USUBJID),
     reml = TRUE, method = "Kenward-Roger", vcov = "Kenward-Roger-Linear",
@@ -97,13 +96,13 @@ test_that("s_get_lsmeans works as expected for ancova", {
   expect_equal(
     res$lsm_contr,
     tibble::tibble(
-      contrast = c("PBO - TRT"),
-      estimate = c(-3.89943),
+      contrast = c("TRT - PBO"),
+      estimate = c(3.89943),
       SE = c(1.686347),
       df = c(128),
-      lower.CL = c(-7.236155),
-      upper.CL = c(-0.562705),
-      t.ratio = c(-2.312354),
+      lower.CL = c(0.562705),
+      upper.CL = c(7.236155),
+      t.ratio = c(2.312354),
       p.value = c(0.02235472)
     ),
     tolerance = 0.0001

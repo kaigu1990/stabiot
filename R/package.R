@@ -8,8 +8,8 @@
 #' @importFrom magrittr set_colnames set_rownames
 #' @importFrom lifecycle deprecated
 #' @importFrom stats pbeta rbinom confint as.formula setNames coef quantile
-#' @importFrom dplyr add_count arrange case_when count distinct filter full_join
-#'  group_by left_join mutate row_number rowwise select summarise ungroup
+#' @importFrom dplyr add_count arrange bind_rows case_when count distinct filter
+#'  full_join group_by left_join mutate row_number rowwise select summarise ungroup
 #' @importFrom rlang sym := .data
 #' @importFrom rtables analyze basic_table build_table in_rows rcell non_ref_rcell
 #'  split_cols_by

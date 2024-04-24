@@ -5,31 +5,82 @@ print.s_lsmeans <- function(x, ...) {
   cat("Model Call: ", append = FALSE)
   print(x$model$call)
   cat("\n")
-  varc <- paste0(x$model$xlev[[x$params$var]], collapse = ", ")
-  cat("Predictor/Treatment: ", x$params$var, " (", varc, ")\n", sep = "")
-  if (!is.null(x$params$by)) {
-    byc <- paste0(x$model$xlev[[x$params$by]], collapse = ", ")
-    cat("Group by: ", x$params$by, " (", byc, ")\n", sep = "")
+
+  grp_var <- x$params$var
+  by_var <- x$params$by
+  df <- x$data
+  ref_col <- levels(x$lsm_est[[grp_var]])[1]
+  side <- if (x$params$alternative == "greater" & x$params$null >= 0) {
+    "p-value (Superiority Test)"
+  } else if (x$params$alternative == "greater" & x$params$null < 0) {
+    "p-value (Non-inferiority Test)"
+  } else if (x$params$alternative == "less" & x$params$null >= 0) {
+    "p-value (Non-Superiority Test)"
+  } else if (x$params$alternative == "less" & x$params$null < 0) {
+    "p-value (inferiority Test)"
+  } else {
+    "p-value"
   }
 
-  cat("\n")
-  cat("Least-squares Means Estimates:\n")
-  print(x$lsm_est)
+  df <- bind_rows(
+    x$lsm_est,
+    x$lsm_contr
+  ) %>%
+    rowwise() %>%
+    mutate(
+      !!sym(grp_var) := case_when(
+        is.na(!!sym(grp_var)) ~ strsplit(as.character(.data$contrast), " - ")[[1]][1],
+        TRUE ~ !!sym(grp_var)
+      )
+    )
 
-  if (x$params$contrast) {
-    cat("\n")
-    cat("Contrast Estimates of Least-squares Means:\n")
-    if (x$params$alternative == "two.sided") {
-      cat(sprintf("Null hypothesis is \u03b8 equal to %s.\n", x$params$null))
-    } else if (x$params$alternative == "greater" & x$params$null >= 0) {
-      cat(sprintf("Null hypothesis is \u03b8 non-superiority to %s.\n", x$params$null))
-    } else if (x$params$alternative == "greater" & x$params$null < 0) {
-      cat(sprintf("Null hypothesis is \u03b8 inferiority to %s.\n", x$params$null))
-    } else if (x$params$alternative == "less" & x$params$null >= 0) {
-      cat(sprintf("Null hypothesis is \u03b8 superiority to %s.\n", x$params$null))
-    }
-    print(x$lsm_contr)
+  a_lsmeam_func <- function(df, .var, .in_ref_col, est, contr, vst) {
+    curgrp <- df[[.var]][1]
+    df_est <- df %>%
+      filter(!!sym(grp_var) == curgrp & is.na(.data$contrast))
+    df_contr <- df %>%
+      filter(!!sym(grp_var) == curgrp & .data$contrast == paste(curgrp, "-", ref_col))
+    in_rows(
+      rcell(unlist(df_est[, c("estimate", "SE"), drop = TRUE]), format = "xx.xx (xx.xx)"),
+      rcell(unlist(df_est[, c("lower.CL", "upper.CL"), drop = TRUE]),
+        format = "(xx.xx, xx.xx)",
+        indent_mod = 1L
+      ),
+      non_ref_rcell(
+        unlist(df_contr[, c("estimate", "SE"), drop = TRUE]),
+        .in_ref_col,
+        format = "xx.xx (xx.xx)"
+      ),
+      non_ref_rcell(
+        unlist(df_contr[, c("lower.CL", "upper.CL"), drop = TRUE]),
+        .in_ref_col,
+        format = "(xx.xx, xx.xx)",
+        indent_mod = 1L
+      ),
+      non_ref_rcell(
+        df_contr[, "p.value", drop = TRUE],
+        .in_ref_col,
+        format = "x.xxxx | (<0.0001)",
+        indent_mod = 1L
+      ),
+      .names = c(
+        "LS Mean (SE)", "95% CI",
+        "Difference LS Mean (SE)", "95% CI",
+        side
+      )
+    )
   }
+
+  tbl <- basic_table() %>%
+    split_cols_by(grp_var, ref_group = ref_col)
+  if (!is.null(by_var)) {
+    tbl <- tbl %>% rtables::split_rows_by(by_var, label_pos = "topleft")
+  }
+  result <- tbl %>%
+    analyze(grp_var, a_lsmeam_func) %>%
+    rtables::append_topleft("  Statistics") %>%
+    build_table(df = df)
+  print(result)
 
   invisible(x)
 }
