@@ -15,7 +15,8 @@
 #' @param object (`fitted model`)\cr any fitted model that can be accepted by
 #'  `emmeans::emmeans()`, such as object from `lm` for ANCOVA and `mmrm` for MMRM.
 #' @param var (`string`)\cr string specifying the name of the predictor, such as
-#'  it would be treatment group variable (TRT01PN) in the clinical trials.
+#'  it would be treatment group variable (TRT01PN) in the clinical trials. Default
+#'  the first level is defined as reference group.
 #' @param by (`string`)\cr string specifying the name of the grouped variable.
 #'  The estimates and contrasts will be evaluated separately for each elements
 #'  from the grouped variable.
@@ -74,24 +75,19 @@
 #' @examples
 #' # refactor the level order:
 #' data(fev_data, package = "mmrm")
-#' fev_data$ARMCD <- factor(fev_data$ARMCD, level = c("TRT", "PBO"))
 #'
-#' # fit mmrm model:
+#' # fit MMRM model:
 #' fit <- mmrm::mmrm(
 #'   formula = FEV1 ~ RACE + SEX + ARMCD * AVISIT + us(AVISIT | USUBJID),
 #'   reml = TRUE, method = "Kenward-Roger", vcov = "Kenward-Roger-Linear",
 #'   data = fev_data
 #' )
 #'
-#' # estimate ARMCD within whole visits:
-#' s_get_lsmeans(fit, "ARMCD")
-#'
 #' # estimate ARMCD by visits:
 #' s_get_lsmeans(fit, "ARMCD", by = "AVISIT")
 #'
 #' # estimate ARMCD by visits for superiority testing with null hypothesis of 2:
 #' s_get_lsmeans(fit, "ARMCD", by = "AVISIT", null = 2, alternative = "greater")
-#'
 #'
 #' # fit ANCOVA model:
 #' fit2 <- fev_data |>
@@ -132,7 +128,7 @@ s_get_lsmeans <- function(object,
     )
 
   contr <- if (contrast) {
-    emmeans::contrast(ems, adjust = "none", method = "pairwise")
+    emmeans::contrast(ems, adjust = "none", method = "revpairwise")
   }
   contr_ci <- tibble::as_tibble(
     data.frame(confint(contr, level = conf.level))
@@ -150,6 +146,7 @@ s_get_lsmeans <- function(object,
   structure(
     list(
       model = ems@model.info,
+      data = object$data,
       lsm_est = lsm_est_res,
       lsm_contr = contr_est_res,
       params = list(
