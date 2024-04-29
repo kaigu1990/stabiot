@@ -5,7 +5,7 @@
 "_PACKAGE"
 
 #' @import checkmate
-#' @importFrom magrittr set_colnames set_rownames
+#' @importFrom magrittr set_colnames set_rownames set_names
 #' @importFrom lifecycle deprecated
 #' @importFrom stats pbeta rbinom confint as.formula setNames coef quantile
 #' @importFrom dplyr add_count arrange bind_rows case_when count distinct filter

@@ -34,3 +34,15 @@
 #' John Wiley and Sons Inc., New York, NY.
 #'
 "whas500"
+
+#' CDISC Random ADaM Data
+#'
+#' @description `r lifecycle::badge("experimental")`
+#'
+#' Random ADaM data created from `random.cdisc.data` package.
+#'
+#' @rdname cdisc_random_data
+"rand_adsl"
+
+#' @rdname cdisc_random_data
+"rand_adae"

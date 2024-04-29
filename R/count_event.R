@@ -30,12 +30,12 @@
 #' @export
 #'
 #' @examples
-#' adsl <- formatters::ex_adsl
-#' adae <- formatters::ex_adae
+#' data("rand_adsl")
+#' data("rand_adae")
 #'
-#' # by ARMCD groups
+#' # by TRTA groups
 #' s_count_event(
-#'   data = adae, var = "SUBJID", by = "ARMCD",
+#'   data = rand_adae, var = "SUBJID", by = "ARMCD",
 #'   cond = list(
 #'     "TEAEs" = c("TRTEMFL" = "Y"),
 #'     "TRAEs" = c("TRTEMFL" = "Y", "AEREL" = "Y"),
@@ -44,12 +44,12 @@
 #'   ),
 #'   label = c("Any TEAEs", "Any treatment-related TEAEs",
 #'             "Any serious TEAEs", "Any serious treatment-related TEAEs"),
-#'   denom = adsl
+#'   denom = rand_adsl
 #' )
 #'
 #' # specify the denominator for each groups
 #' s_count_event(
-#'   data = adae, var = "SUBJID", by = "ARMCD",
+#'   data = rand_adae, var = "SUBJID", by = "ARMCD",
 #'   cond = list("TEAEs" = c("TRTEMFL" = "Y")),
 #'   label = c("Any TEAEs"),
 #'   denom = c(100, 100, 100)
@@ -57,16 +57,14 @@
 #'
 #' # no grouping
 #' s_count_event(
-#'   data = adae, var = "SUBJID",
+#'   data = rand_adae, var = "SUBJID",
 #'   cond = list(
 #'     "TEAEs" = c("TRTEMFL" = "Y"),
 #'     "TRAEs" = c("TRTEMFL" = "Y", "AEREL" = "Y")
 #'   ),
 #'   label = c("Any TEAEs", "Any treatment-related TEAEs"),
-#'   denom = adsl
+#'   denom = 200
 #' )
-#'
-#'
 s_count_event <- function(data,
                           var,
                           by = NULL,
@@ -78,11 +76,14 @@ s_count_event <- function(data,
   assert_subset(by, names(data))
   assert_true(length(names(cond)) == length(label))
   assert_multi_class(denom, c("numeric", "data.frame"))
+  if (is.null(by) & is.data.frame(denom)) {
+    stop("denom should be numeric vector if by is defined as NULL.")
+  }
 
   cond_labels <- split(label, names(cond))
   if (is.null(by)) {
     by <- "Total"
-    data[["Total"]] <- factor(by, level = by)
+    data[["Total"]] <- factor(by, levels = by)
   } else {
     if (!is.factor(data[[by]])) {
       data[[by]] <- factor(by, levels = unique(data[[by]]))
@@ -102,7 +103,7 @@ s_count_event <- function(data,
   assert_numeric(denom_vec)
   assert_true(all(names(denom_vec) == levels(data[[by]])))
 
-  cond %>%
+  cnt_tb <- cond %>%
     purrr::imap(function(x, idx) {
       filter_expr <- if (is.character(x)) {
         paste0(names(x), " == '", x, "'", collapse = " & ")
@@ -113,6 +114,7 @@ s_count_event <- function(data,
       }
       df <- data %>%
         filter(!!rlang::parse_quo(filter_expr, env = rlang::global_env()))
+      attributes(df)$label <- NULL
       res <- if (!is.null(by)) {
         df %>%
           distinct(!!sym(by), !!sym(var), .keep_all = TRUE) %>%
@@ -125,7 +127,7 @@ s_count_event <- function(data,
       res %>%
         mutate(
           group = droplevels(!!sym(by)),
-          N = denom_vec,
+          N = as.vector(denom_vec),
           perc = .data$n / .data$N,
           label_ = idx,
           label = cond_labels[[idx]]
@@ -134,4 +136,19 @@ s_count_event <- function(data,
         select(c("group", "n", "N", "perc", "label_", "label"))
     }) %>%
     purrr::list_rbind()
+
+  structure(
+    list(
+      data = data,
+      cnt = cnt_tb,
+      params = list(
+        var = var,
+        by = by,
+        cond = cond,
+        label = label,
+        denom = denom_vec
+      )
+    ),
+    class = "count_evt"
+  )
 }
