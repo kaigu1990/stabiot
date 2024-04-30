@@ -496,3 +496,36 @@ print.s_coxph <- function(x, ...) {
 
   invisible(x)
 }
+
+
+#' @describeIn s_count_event prints the counts and percentages of events.
+#' @exportS3Method
+#' @keywords internal
+print.count_evt <- function(x, ...) {
+  grp_var <- x$params$by
+
+  a_evt_func <- function(df, .var, cnt_tb, lab) {
+    curgrp <- df[[.var]][1]
+    res <- cnt_tb %>%
+      filter(.data$group == curgrp & .data$label == lab)
+    in_rows(
+      rcell(unlist(res[, c("n", "perc"), drop = TRUE]), format = "xx (xx.x%)"),
+      .names = lab
+    )
+  }
+
+  labels <- x$params$label
+  tbl <- basic_table(show_colcounts = TRUE) %>%
+    split_cols_by(grp_var)
+  for (i in seq_along(labels)) {
+    tbl <- tbl %>%
+      analyze(grp_var, a_evt_func, show_labels = "hidden",
+              extra_args = list(cnt_tb = x$cnt, lab = labels[i]),
+              table_names = labels[i])
+  }
+  result <- tbl %>%
+    build_table(df = x$data, col_counts = x$params$denom)
+  print(result)
+
+  invisible(x)
+}

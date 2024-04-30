@@ -155,3 +155,38 @@ test_that("print.s_coxph works as expected", {
   )))
   expect_match(res3, "P-value method for HR: logtest", fixed = TRUE)
 })
+
+test_that("print.count_evt works as expected", {
+  data("rand_adsl")
+  data("rand_adae")
+
+  res <- capture_output(print(s_count_event(
+    data = rand_adae, var = "SUBJID", by = "ARMCD",
+    cond = list(
+      "TEAEs" = c("TRTEMFL" = "Y"),
+      "TRAEs" = c("TRTEMFL" = "Y", "AEREL" = "Y"),
+      "SAE" = c("AESER" = "Y"),
+      "TRSAE" = c("AESER" = "Y", "AEREL" = "Y")
+    ),
+    label = c(
+      "Any TEAEs", "Any treatment-related TEAEs",
+      "Any serious TEAEs", "Any serious treatment-related TEAEs"
+    ),
+    denom = rand_adsl
+  )))
+  expect_match(res, "ARM A        ARM B        ARM C", fixed = TRUE)
+  expect_match(res, "(N=36)       (N=34)       (N=30)", fixed = TRUE)
+
+  res2 <- capture_output(print(s_count_event(
+    data = rand_adae, var = "SUBJID",
+    cond = list(
+      "TEAEs" = c("TRTEMFL" = "Y"),
+      "TRAEs" = c("TRTEMFL" = "Y", "AEREL" = "Y")
+    ),
+    label = c("Any TEAEs", "Any treatment-related TEAEs"),
+    denom = 200
+  )))
+  expect_match(res2, "Total", fixed = TRUE)
+  expect_match(res2, "(N=200)", fixed = TRUE)
+})
+

@@ -52,7 +52,7 @@ h_prep_prop(data, var, by, by.level, resp)
 
 \item{var}{(\code{string})\cr target variable name for estimation.}
 
-\item{by}{(\code{string})\cr a optional variable to group by. If null, use the whole data.}
+\item{by}{(\code{string})\cr an optional variable to group by. If null, use the whole data.}
 
 \item{by.level}{(\code{vector})\cr an optional vector for encoding \code{var} as a factor
 and the first level will be as the reference group. If null, use the default

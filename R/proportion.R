@@ -31,7 +31,7 @@ NULL
 #'
 #' @param data (`data.frame`)\cr a data frame as input.
 #' @param var (`string`)\cr target variable name for estimation.
-#' @param by (`string`)\cr a optional variable to group by. If null, use the whole data.
+#' @param by (`string`)\cr an optional variable to group by. If null, use the whole data.
 #' @param by.level (`vector`)\cr an optional vector for encoding `var` as a factor
 #'  and the first level will be as the reference group. If null, use the default
 #'  order to encode.
