@@ -261,9 +261,9 @@ print.s_survival <- function(x, fm = "months", ...) {
     surv_med <- res$surv$median %>%
       mutate(
         censors = .data$n - .data$events
-      ) %>%
-      tibble::column_to_rownames(var = "group")
-    ind <- grep(df[[.var]][1], row.names(surv_med), fixed = TRUE)
+      )
+    # ind <- grep(df[[.var]][1], row.names(surv_med), fixed = TRUE)
+    ind <- which(surv_med$group == df[[.var]][1])
     in_rows(
       "Number of events" = rcell(
         surv_med$events[ind] * c(1, 1 / .N_col),
@@ -277,8 +277,7 @@ print.s_survival <- function(x, fm = "months", ...) {
   }
 
   a_surv_time_func <- function(df, .var, res) {
-    med_tb <- res$surv$median %>%
-      tibble::column_to_rownames(var = "group")
+    med_tb <- res$surv$median
     quant_tb <- res$surv$quantile %>%
       tidyr::pivot_longer(cols = -c(1, 2), values_to = "Value", names_to = "Stat") %>%
       tidyr::pivot_wider(
@@ -286,15 +285,17 @@ print.s_survival <- function(x, fm = "months", ...) {
         names_from = c("quantile", "Stat"),
         names_glue = "Q{quantile}_{Stat}",
         values_from = c("Value")
-      ) %>%
-      tibble::column_to_rownames(var = "group")
-    range_tb <- res$surv$range %>%
-      tibble::column_to_rownames(var = "group")
-    ind <- grep(df[[.var]][1], row.names(med_tb), fixed = TRUE)
+      )
+    range_tb <- res$surv$range
+    # ind <- grep(df[[.var]][1], row.names(med_tb), fixed = TRUE)
+    ind <- which(med_tb$group == df[[.var]][1])
     med_time <- list(med_tb[ind, c("median", "lower", "upper")])
     quantile_time <- lapply(c(res$params$quantile * 100), function(x) {
+      ind <- which(quant_tb$group == df[[.var]][1])
       unlist(c(quant_tb[ind, grep(paste0("Q", x), names(quant_tb))]))
     })
+    # ind <- grep(df[[.var]][1], row.names(range_tb), fixed = TRUE)
+    ind <- which(range_tb$group == df[[.var]][1])
     range_time <- list(range_tb[ind, c("min", "max")])
     in_rows(
       .list = c(med_time, quantile_time, range_time),
@@ -355,7 +356,8 @@ print.s_survival <- function(x, fm = "months", ...) {
       curgrp <- df[[.var]][1]
       rate_diff_tb <- rate_diff_tb %>%
         filter(.data$reference == ref_col & .data$comparison == curgrp)
-      ind <- grep(df[[.var]][1], row.names(rate_tb), fixed = TRUE)
+      # ind <- grep(df[[.var]][1], row.names(rate_tb), fixed = TRUE)
+      ind <- which(row.names(rate_tb) == df[[.var]][1])
       in_rows(
         rcell(rate_tb[ind, "n.risk", drop = TRUE], format = "xx"),
         rcell(rate_tb[ind, "surv", drop = TRUE], format = "xx.xxx"),
@@ -519,9 +521,11 @@ print.count_evt <- function(x, ...) {
     split_cols_by(grp_var)
   for (i in seq_along(labels)) {
     tbl <- tbl %>%
-      analyze(grp_var, a_evt_func, show_labels = "hidden",
-              extra_args = list(cnt_tb = x$cnt, lab = labels[i]),
-              table_names = labels[i])
+      analyze(grp_var, a_evt_func,
+        show_labels = "hidden",
+        extra_args = list(cnt_tb = x$cnt, lab = labels[i]),
+        table_names = labels[i]
+      )
   }
   result <- tbl %>%
     build_table(df = x$data, col_counts = x$params$denom)

@@ -17,6 +17,7 @@ s_get_survfit(
   strata = NULL,
   rho = 0,
   pairwise = FALSE,
+  survdiff = TRUE,
   ...
 )
 
@@ -49,6 +50,8 @@ of comparing survival curves. Default is 0 that is log-rank , others options
 can see \code{\link[survival:survdiff]{survival::survdiff()}}.}
 
 \item{pairwise}{(\code{logical})\cr whether to conduct the pairwise comparison.}
+
+\item{survdiff}{(\code{logical})\cr whether to test survival curve differences.}
 
 \item{...}{other arguments to be passed to \code{\link[survival:survfit]{survival::survfit()}}.}
 

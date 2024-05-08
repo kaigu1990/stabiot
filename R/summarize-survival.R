@@ -25,6 +25,7 @@
 #'  of comparing survival curves. Default is 0 that is log-rank , others options
 #'  can see [survival::survdiff()].
 #' @param pairwise (`logical`)\cr whether to conduct the pairwise comparison.
+#' @param survdiff (`logical`)\cr whether to test survival curve differences.
 #' @param ... other arguments to be passed to [survival::survfit()].
 #'
 #' @order 1
@@ -120,6 +121,7 @@ s_get_survfit <- function(data,
                           strata = NULL,
                           rho = 0,
                           pairwise = FALSE,
+                          survdiff = TRUE,
                           ...) {
   assert_class(data, "data.frame")
   assert_formula(formula)
@@ -158,7 +160,7 @@ s_get_survfit <- function(data,
       }
     }) %>%
     purrr::list_rbind() %>%
-    tidyr::pivot_longer(cols = dplyr::contains(grps), names_to = "group") %>%
+    tidyr::pivot_longer(tidyr::everything(), names_to = "group") %>%
     mutate(
       group = sub(paste0(grp_var, "="), "", .data$group),
       type = rep(c("time", "lower", "upper"), each = length(quantile) * length(grps)),
@@ -235,7 +237,7 @@ s_get_survfit <- function(data,
   }
 
   # test survival curves
-  surv_test <- if (!is.null(km_fit$strata)) {
+  surv_test <- if (!is.null(km_fit$strata) & survdiff) {
     survdiff <- h_pairwise_survdiff(
       formula = formula,
       strata = strata,

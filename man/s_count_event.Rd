@@ -63,8 +63,10 @@ s_count_event(
     "SAE" = c("AESER" = "Y"),
     "TRSAE" = c("AESER" = "Y", "AEREL" = "Y")
   ),
-  label = c("Any TEAEs", "Any treatment-related TEAEs",
-            "Any serious TEAEs", "Any serious treatment-related TEAEs"),
+  label = c(
+    "Any TEAEs", "Any treatment-related TEAEs",
+    "Any serious TEAEs", "Any serious treatment-related TEAEs"
+  ),
   denom = rand_adsl
 )
 

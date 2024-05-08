@@ -189,4 +189,3 @@ test_that("print.count_evt works as expected", {
   expect_match(res2, "Total", fixed = TRUE)
   expect_match(res2, "(N=200)", fixed = TRUE)
 })
-
