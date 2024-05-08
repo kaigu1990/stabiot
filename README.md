@@ -14,7 +14,7 @@ produced by SAS from outsourcing in clinical trials. The data sets would
 be ADaM format preferably, but they do not have to strictly follow the
 CDISC standards.
 
-To guarantee accurate results, I prefer to wrap mature R package rather
+To guarantee accurate results, I prefer to wrap mature R packages rather
 than rebuild statistical methods. Parts of statistics outputs are styled
 with `rtables`. For present, the completed sections are listed below.
 
@@ -25,6 +25,7 @@ with `rtables`. For present, the completed sections are listed below.
 - Derive best overall response (confirmed or not confirmed BOR) per
   RECIST 1.1.
 - Summarize survival analyses using `survival` package.
+- Count number of events (AE overview).
 
 ## Installation
 
