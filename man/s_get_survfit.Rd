@@ -21,7 +21,7 @@ s_get_survfit(
   ...
 )
 
-\method{print}{s_survival}(x, fm = "months", ...)
+\method{print}{s_survival}(x, fm = "months", export_pdf = FALSE, ...)
 
 h_pairwise_survdiff(formula, data, strata = NULL, rho = 0)
 }
@@ -56,6 +56,8 @@ can see \code{\link[survival:survdiff]{survival::survdiff()}}.}
 \item{...}{other arguments to be passed to \code{\link[survival:survfit]{survival::survfit()}}.}
 
 \item{fm}{(\code{string})\cr string of unit for survival time.}
+
+\item{export_pdf}{(\code{logical})\cr whether to export PDF to the current directory.}
 }
 \value{
 An object of class \code{s_survival} is a list contains several summary tables
