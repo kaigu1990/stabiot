@@ -242,7 +242,8 @@ print.or_ci <- function(x, ...) {
 #' @exportS3Method
 #' @keywords internal
 #' @param fm (`string`)\cr string of unit for survival time.
-print.s_survival <- function(x, fm = "months", ...) {
+#' @param export_pdf (`logical`)\cr whether to export PDF to the current directory.
+print.s_survival <- function(x, fm = "months", export_pdf = FALSE, ...) {
   cat("Surv formula: ", x$params$formula, "\n", sep = "")
   grp <- unique(x$surv$quantile$group)
   cat("Group by: ", paste(grp, collapse = ", "), "\n", sep = "")
@@ -408,13 +409,20 @@ print.s_survival <- function(x, fm = "months", ...) {
     build_table(df)
   print(result)
 
+  if (export_pdf) {
+    tf <- tempfile(pattern = "t_surv_", tmpdir = getwd(), fileext = ".pdf")
+    file <- rtables::export_as_pdf(result, file = tf)
+    print(file$file)
+  }
+
   invisible(x)
 }
 
 #' @describeIn s_get_coxph prints survival analysis summary from `coxph`.
 #' @exportS3Method
 #' @keywords internal
-print.s_coxph <- function(x, ...) {
+#' @param export_pdf (`logical`)\cr whether to export PDF to the current directory.
+print.s_coxph <- function(x, export_pdf = FALSE, ...) {
   cat("Surv formula: ", x$params$formula, "\n", sep = "")
   grp <- x$params$group
   cat("Group by: ", paste(grp, collapse = ", "), "\n", sep = "")
@@ -495,6 +503,12 @@ print.s_coxph <- function(x, ...) {
     ) %>%
     build_table(df)
   print(result)
+
+  if (export_pdf) {
+    tf <- tempfile(pattern = "t_coxph_", tmpdir = getwd(), fileext = ".pdf")
+    file <- rtables::export_as_pdf(result, file = tf)
+    print(file$file)
+  }
 
   invisible(x)
 }

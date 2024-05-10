@@ -16,7 +16,7 @@ s_get_coxph(
   ...
 )
 
-\method{print}{s_coxph}(x, ...)
+\method{print}{s_coxph}(x, export_pdf = FALSE, ...)
 }
 \arguments{
 \item{data}{(\code{data.frame})\cr a data frame as input.}
@@ -38,6 +38,8 @@ Score (logrank) test).}
 \item{pairwise}{(\code{logical})\cr whether to conduct the pairwise comparison.}
 
 \item{...}{other arguments to be passed to \code{\link[survival:coxph]{survival::coxph()}}.}
+
+\item{export_pdf}{(\code{logical})\cr whether to export PDF to the current directory.}
 }
 \value{
 An object of class \code{s_coxph} is a list contains hazards ratio and p-value tables.
