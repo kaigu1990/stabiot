@@ -46,3 +46,21 @@
 
 #' @rdname cdisc_random_data
 "rand_adae"
+
+#' Example Datasets with low and high dropout
+#'
+#' @description `r lifecycle::badge("experimental")`
+#'
+#' These two datasets are from Mallinckrodt et al.
+#' (https://journals.sagepub.com/doi/pdf/10.1177/2168479013501310) which is available
+#' via (https://www.lshtm.ac.uk/research/centres-projects-groups/missing-data#dia-missing-data).
+#' The original data were from 2 nearly identically designed antidepressant clinical
+#' trials that were originally reported by Goldstein et al and Detke et al.
+#' Assessments on the Hamilton 17-item rating scale for depression (HAMD17)19 were
+#' taken at baseline and weeks 1, 2, 4, 6, and 8 in each trial.
+#'
+#' @rdname missing_data
+"low1"
+
+#' @rdname missing_data
+"high1"

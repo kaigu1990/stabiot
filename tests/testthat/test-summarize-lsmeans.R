@@ -108,3 +108,15 @@ test_that("s_get_lsmeans works as expected for ancova", {
     tolerance = 0.0001
   )
 })
+
+test_that("s_get_lsmeans works as expected when the grouping variable is numeric", {
+  data("low1")
+  fit <- low1 %>%
+    dplyr::filter(week == 8 & !is.na(change)) %>%
+    lm(formula = change ~ basval + trt)
+  res <- s_get_lsmeans(fit, "trt")
+
+  expect_identical(dim(res$lsm_est), c(2L, 8L))
+  expect_identical(dim(res$lsm_contr), c(1L, 8L))
+  expect_identical(res$lsm_contr$contrast, "2 - 1")
+})
