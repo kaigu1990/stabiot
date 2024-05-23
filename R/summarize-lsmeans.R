@@ -142,6 +142,9 @@ s_get_lsmeans <- function(object,
     data.frame(emmeans::test(contr, null = null, delta = 0, side = side, level = conf.level))
   )
   contr_est_res <- suppressMessages(dplyr::full_join(contr_ci, contr_pval))
+  if (all(contr_est_res$contrast == paste(paste0(var, rev(ems@levels[[1]])), collapse = " - "))) {
+    contr_est_res$contrast <- paste(rev(ems@levels[[1]]), collapse = " - ")
+  }
 
   structure(
     list(
