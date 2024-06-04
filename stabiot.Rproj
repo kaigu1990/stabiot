@@ -17,6 +17,6 @@ StripTrailingWhitespace: Yes
 
 BuildType: Package
 PackageUseDevtools: Yes
-PackagePath: C:/Users/TJ0695/Documents/stabiot
+PackagePath: C:/Users/TH0528/Documents/stabiot
 PackageInstallArgs: --no-multiarch --with-keep.source
 PackageRoxygenize: rd,namespace
