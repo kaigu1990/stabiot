@@ -153,6 +153,20 @@ derive_bor <- function(data,
     data
   }
 
+  # Detect the CR->PR/SD profile regardless of any NE, and put a warning
+  cr_tmp <- rs %>%
+    left_join(
+      select(rs, !!sym(unique_id), "ADT", "AVALC"),
+      by = unique_id, relationship = "many-to-many"
+    ) %>%
+    filter(AVALC.x == "CR" & AVALC.y %in% c("PR", "SD") & ADT.y > ADT.x)
+  warning(
+    paste0(
+      "Please query the data of CR with subsequent PR/SD in ", unique_id, "=",
+      paste(unique(cr_tmp$USUBJID), collapse = ",")
+    )
+  )
+
   bor_res <- if (!confirm) {
     rs %>%
       mutate(
@@ -185,7 +199,7 @@ derive_bor <- function(data,
       mutate(
         flag = AVALC.y %in% c("CR") & ADT.y >= ADT.x + days(ref_interval)
       ) %>%
-      group_by(!!sym(unique_id)) %>%
+      group_by(!!sym(unique_id), ADT.x) %>%
       filter(
         row_number() <= min(match(TRUE, .data$flag))
       ) %>%
