@@ -178,6 +178,27 @@ test_that("s_get_survfit works as expected with three groups when pairwise is TR
   expect_identical(dim(res$surv$range), c(3L, 7L))
 })
 
+test_that("s_get_survfit works as expected when group variable is not factor", {
+  data("whas500")
+  dat <- whas500
+
+  res <- s_get_survfit(
+    data = dat,
+    formula = Surv(LENFOL, FSTAT) ~ AFB,
+    strata = c("AGE", "GENDER")
+  )
+  expect_equal(
+    res$surv_diff$test,
+    tibble::tibble(
+      reference = "1",
+      comparison = "0",
+      method = "Stratified Log-Rank",
+      pval = 0.08269744
+    ),
+    tolerance = 0.0001
+  )
+})
+
 # s_get_coxph ----
 
 test_that("s_get_coxph works as expected with default arguments", {
@@ -245,6 +266,26 @@ test_that("s_get_coxph works as expected with stratification", {
       test = c(2.964049, 3.060662, 3.040000),
       df = c(1, 1, 1),
       pval = c(0.08513451, 0.08020901, 0.08133120)
+    ),
+    tolerance = 0.0001
+  )
+})
+
+test_that("s_get_coxph works as expected when group variable is not factor", {
+  data("whas500")
+  dat <- whas500
+
+  res <- s_get_coxph(data = dat, formula = Surv(LENFOL, FSTAT) ~ AFB)
+  expect_equal(
+    res$hr,
+    tibble::tibble(
+      reference = "1",
+      comparison = "0",
+      n = 500,
+      events = 215,
+      hr = 0.5828995,
+      lower = 0.4214764,
+      upper = 0.8061465
     ),
     tolerance = 0.0001
   )

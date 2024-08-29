@@ -351,7 +351,7 @@ s_odds_ratio <- function(data,
     if (strata.method == "CMH") {
       split(bylist, 1:nrow(bylist)) %>%
         purrr::map(function(x) {
-          df <- filter(data, !!sym(by) %in% x) %>%
+          df <- filter(object$data, !!sym(by) %in% x) %>%
             mutate(
               !!sym(by) := droplevels(!!sym(by))
             )
