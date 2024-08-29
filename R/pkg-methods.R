@@ -95,10 +95,11 @@ print.prop_ci <- function(x, ...) {
   ref_col <- x$params$by.level[1]
 
   a_prop_func <- function(df, .var, .N_col, .in_ref_col, var_name, res) {
-    prop_est <- res$prop_est %>%
-      tibble::column_to_rownames(var = "group")
+    prop_est <- res$prop_est
+      # tibble::column_to_rownames(var = "group")
     curgrp <- df[[.var]][1]
-    ind <- grep(curgrp, row.names(prop_est), fixed = TRUE)
+    # ind <- grep(curgrp, row.names(prop_est), fixed = TRUE)
+    ind <- which(prop_est$group == curgrp)
     ret <- list(
       rcell(
         sum(df[[var_name]] == res$params$resp) * c(1, 1 / .N_col),
@@ -172,10 +173,11 @@ print.or_ci <- function(x, ...) {
   ref_col <- x$params$by.level[1]
 
   a_or_func <- function(df, .var, .in_ref_col, res, ci_method, pval_method) {
-    est_dat <- res %>%
-      tibble::column_to_rownames(var = "group")
+    est_dat <- res
+      # tibble::column_to_rownames(var = "group")
     curgrp <- df[[.var]][1]
-    ind <- grep(curgrp, row.names(est_dat), fixed = TRUE)
+    # ind <- grep(curgrp, row.names(est_dat), fixed = TRUE)
+    ind <- which(est_dat$group == curgrp)
     in_rows(
       non_ref_rcell(
         est_dat[ind, "or.est", drop = TRUE],

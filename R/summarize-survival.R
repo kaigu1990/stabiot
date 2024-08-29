@@ -134,6 +134,12 @@ s_get_survfit <- function(data,
   conf_type <- match.arg(conf_type, c("log-log", "log", "plain"), several.ok = FALSE)
 
   formula <- as.formula(formula)
+  grp_var <- attr(stats::terms(formula), "term.labels")
+  if (length(grp_var) > 0 && !is.factor(data[[grp_var]])) {
+    data[[grp_var]] <- factor(data[[grp_var]], unique(data[[grp_var]]))
+    message(paste0("Group Var [", grp_var, "] was not factor, converting to facor by first appearance."))
+  }
+
   km_fit <- survival::survfit(
     data = data,
     formula = formula,
@@ -146,7 +152,6 @@ s_get_survfit <- function(data,
     grp_var <- "new_col"
     data[[grp_var]] <- "Total"
   } else {
-    grp_var <- attr(stats::terms(formula), "term.labels")
     sub(paste0(grp_var, "="), "", names(km_fit$strata))
   }
 
@@ -408,6 +413,11 @@ s_get_coxph <- function(data,
   )
 
   grp_var <- attr(stats::terms(formula), "term.labels")
+  if (!is.factor(data[[grp_var]])) {
+    data[[grp_var]] <- factor(data[[grp_var]], unique(data[[grp_var]]))
+    message(paste0("Group Var [", grp_var, "] was not factor, converting to facor by first appearance."))
+  }
+
   formula <- if (!is.null(strata)) {
     as.formula(
       paste0(format(formula), " + strata(", paste(strata, collapse = ", "), ")")
@@ -423,6 +433,7 @@ s_get_coxph <- function(data,
     droplevels(vardf)
   }
   grps <- levels(group)
+  data[grp_var]
   bylist <- if (pairwise) {
     t(combn(grps, 2))
   } else {
