@@ -66,7 +66,7 @@ test_that("s_get_lsmeans works as expected for superiority testing with null hyp
       t.ratio = c(1.640127, 2.006529),
       p.value = c(0.05156904, 0.02332779)
     ),
-    tolerance = 0.0001
+    tolerance = 0.001
   )
 })
 

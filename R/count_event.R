@@ -88,7 +88,7 @@ s_count_event <- function(data,
     data[["Total"]] <- factor(by, levels = by)
   } else {
     if (!is.factor(data[[by]])) {
-      data[[by]] <- factor(by, levels = unique(data[[by]]))
+      data[[by]] <- factor(data[[by]], levels = unique(data[[by]]))
     }
   }
   denom_vec <- if (is.data.frame(denom)) {
