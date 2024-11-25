@@ -23,7 +23,7 @@ equation is filtering id while the right should be a flag, string or numerical v
 \item{label}{(\code{string})\cr an optional string vector for labeling each filtering
 conditions. Default is the name of \code{cond} variable.}
 
-\item{denom}{(\code{string} or \code{data.frame})\cr denominator for proportion can be a
+\item{denom}{(\code{numeric} or \code{data.frame})\cr denominator for proportion can be a
 numeric vector of denominators or a data frame where we can count the \code{var} inside.}
 }
 \value{
