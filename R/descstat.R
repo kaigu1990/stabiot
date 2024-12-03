@@ -2,23 +2,31 @@
 #'
 #' @description `r lifecycle::badge("experimental")`
 #'
-#' Create a summary table for one or more variables by one group, as well as a
-#' total column if necessary.
+#' Create a summary table for one variable or nested variable by one group, as 
+#' well as a total column if necessary.
 #'
 #' @param data (`data.frame`)\cr a data frame that contains the variables to be
 #'  summarized and grouped.
-#' @param denom (`data.frame`)\cr the denominator to use for the percentage, but
-#'  not use temporarily. By default, it's NULL, meaning the function will use
-#'  the number of values of the `data`, including missing value.
-#' @param var (`vector`)\cr a character vector of variables to be summarized within `data`.
+#' @param var (`string`)\cr a character variable to be summarized within `data`.
+#' @param nested_vars (`string`)\cr a character variable as the nested level to 
+#'  be summarized along with `var`.
 #' @param by (`string`)\cr a character variable for grouping within `data`.
-#' @param format (`string`)\cr formatting string from `formatters::list_valid_format_labels()`
+#' @param fmt (`string`)\cr formatting string from `formatters::list_valid_format_labels()`
 #'  for frequency counts and percentages.
+#' @param denom (`numeric` or `data.frame`)\cr denominator for proportion can be a
+#'  numeric vector of denominators or a data frame where we can count the `var` inside.
+#' @param distinct (`string`)\cr a character variable to determine which level should 
+#'  be kept only unique rows from `data`. Default is 'USUBJID' for normal counting, but 
+#'  it can be set as 'STUDYID' for AE events if necessary.
 #' @param fctdrop (`logical`)\cr whether to include the levels of the variables
 #'  but with no records.
-#' @param addtot (`logical`)\cr whether to add total column in the output or not.
+#' @param col_tot (`logical`)\cr whether to add total column in the output or not.
+#' @param row_tot (`string`)\cr Default set as NULL for no total row, but if set as 
+#'  'n' or other words that will be defined as a label for total row.
+#' @param nested_row (`logical`)\cr whether to add nested variable in the label row. 
+#'  Set to TRUE for AE counting.
 #' @param na_str (`string`)\cr a string to replace `NA` in the output if no records
-#'  will be counted for any category.
+#'  will be counted for any category, but not used.
 #'
 #' @note By default, the each category is sorted based on the corresponding factor
 #'  level of `var` variable. If the variable is not a factor, that will be sorted
@@ -88,6 +96,7 @@ sfreq <- function(data,
   assert_subset(var, choices = names(data), empty.ok = FALSE)
   assert_subset(nested_vars, choices = names(data), empty.ok = TRUE)
   assert_subset(by, choices = names(data), empty.ok = FALSE)
+  assert_multi_class(denom, c("numeric", "data.frame"))
   assert_subset(distinct, choices = names(data), empty.ok = FALSE)
   assert_logical(fctdrop)
   assert_logical(col_tot)
