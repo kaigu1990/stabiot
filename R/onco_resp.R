@@ -177,7 +177,7 @@ derive_bor <- function(data,
           TRUE ~ AVALC
         )
       ) %>%
-      left_join(aval_map, by = c("AVALC" = "avalc_temp")) %>%
+      left_join(aval_map, by = "avalc_temp") %>%
       mutate(AVAL = .data$aval_temp) %>%
       arrange(!!sym(unique_id), AVAL, ADT) %>%
       # select the best and first one as the best overall response.

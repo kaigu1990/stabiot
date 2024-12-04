@@ -33,7 +33,7 @@ test_that("derive_bor works as expected with default arguments", {
     ) %>%
     select(-TRTSDTC)
 
-  res <- derive_bor(data = adrs)
+  res <- suppressWarnings(derive_bor(data = adrs))
   expect_tibble(res)
   expect_identical(
     res,
@@ -91,7 +91,7 @@ test_that("derive_bor works as expected for confirmed BOR", {
     ) %>%
     select(-TRTSDTC)
 
-  res <- derive_bor(data = adrs, confirm = TRUE)
+  res <- suppressWarnings(derive_bor(data = adrs, confirm = TRUE))
   expect_identical(
     res,
     tibble::tibble(
@@ -148,7 +148,7 @@ test_that("derive_bor works as expected with zero NE", {
     ) %>%
     select(-TRTSDTC)
 
-  res <- derive_bor(data = adrs, max_ne = 0, confirm = TRUE)
+  res <- suppressWarnings(derive_bor(data = adrs, max_ne = 0, confirm = TRUE))
   expect_identical(
     res,
     tibble::tibble(
@@ -206,7 +206,7 @@ test_that("derive_bor works as expected with at least 56 days of reference inter
     ) %>%
     select(-TRTSDTC)
 
-  res <- derive_bor(data = adrs, ref_start_window = 56, ref_interval = 56, confirm = TRUE)
+  res <- suppressWarnings(derive_bor(data = adrs, ref_start_window = 56, ref_interval = 56, confirm = TRUE))
   expect_identical(
     res,
     tibble::tibble(
