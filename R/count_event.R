@@ -16,7 +16,7 @@
 #'  equation is filtering id while the right should be a flag, string or numerical value.
 #' @param label (`string`)\cr an optional string vector for labeling each filtering
 #'  conditions. Default is the name of `cond` variable.
-#' @param denom (`string` or `data.frame`)\cr denominator for proportion can be a
+#' @param denom (`numeric` or `data.frame`)\cr denominator for proportion can be a
 #'  numeric vector of denominators or a data frame where we can count the `var` inside.
 #'
 #' @return

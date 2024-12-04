@@ -119,3 +119,148 @@ h_pairwise_survdiff <- function(formula,
     p.value = pval
   )
 }
+
+#' Format Count and Percent
+#'
+#' @description `r lifecycle::badge("experimental")`
+#'
+#' Help function to format the count and percent into one string.
+#'
+#' @param cnt (`numeric`)\cr numeric vector for count.
+#' @param perc (`numeric`)\cr numeric vector for percent, if Null only format count.
+#' @param format (`string`)\cr formatting string from `formatters::list_valid_format_labels()`
+#'  for `formatters::format_value()` function.
+#' @param ... other arguments to be passed to [formatters::format_value].
+#'
+#' @return A character vector of formatted counts and percents.
+#' @export
+#'
+#' @examples
+#' h_fmt_count_perc(cnt = c(5, 9, 12, 110, 0), format = "xx")
+#' h_fmt_count_perc(
+#'   cnt = c(5, 9, 12, 110, 0),
+#'   perc = c(0.0368, 0.0662, 0.0882, 0.8088, 0),
+#'   format = "xx (xx.x%)"
+#' )
+h_fmt_count_perc <- function(cnt, perc = NULL, format, ...) {
+  if (is.null(perc)) {
+    assert_choice(format, formatters::list_valid_format_labels()$`1d`)
+    assert_numeric(cnt)
+    num_str <- sapply(cnt, function(x) {
+      format_value(x, format = format, ...)
+    })
+  }
+
+  if (!is.null(perc)) {
+    assert_choice(format, formatters::list_valid_format_labels()$`2d`)
+    assert_numeric(cnt)
+    assert_numeric(perc)
+    num_str <- mapply(function(x, y) {
+      format_value(c(x, y), format = format, ...)
+    }, x = cnt, y = perc)
+  }
+
+  num_str
+}
+
+#' @describeIn sfreq Helper Function for counting by groups using [dplyr::count()].
+#'
+#' @export
+#'
+h_count_by_add_tot <- function(data,
+                               var = NULL,
+                               nested_vars = NULL,
+                               by,
+                               fmt,
+                               tot_df,
+                               dtype,
+                               na_str,
+                               sort = FALSE,
+                               fctdrop = FALSE,
+                               col_tot = TRUE,
+                               nested_row = TRUE) {
+  vars <- c(nested_vars, var, by)
+  var0 <- c(var, nested_vars)[1]
+  rst1 <- data %>%
+    dplyr::count(!!!syms(vars), sort = sort, .drop = fctdrop) %>%
+    left_join(tot_df, by = by) %>%
+    dplyr::mutate(
+      label := !!sym(var0),
+      dtype = dtype,
+      perc = .data$n / .data$tot
+    ) %>%
+    dplyr::select(label, !!!syms(vars), dtype, dplyr::everything())
+
+  rst2 <- if (col_tot) {
+    rst2 <- data %>%
+      dplyr::count(!!!syms(vars[-length(vars)]), sort = sort, .drop = fctdrop) %>%
+      dplyr::mutate(
+        label := !!sym(var0),
+        dtype = dtype,
+        tot = colSums(tot_df[, "tot"]),
+        perc = .data$n / tot,
+        !!sym(by) := "Total"
+      ) %>%
+      dplyr::select(label, !!!syms(vars), dtype, dplyr::everything())
+  } else {
+    NULL
+  }
+
+  df <- rbind(rst1, rst2)
+  
+  fmt_lst <- formatters::list_valid_format_labels()
+  df$con <- if (fmt %in% fmt_lst$`1d`) {
+    h_fmt_count_perc(df$n, format = fmt)
+  } else if (fmt %in% fmt_lst$`2d`) {
+    h_fmt_count_perc(df$n, perc = df$perc, format = fmt)
+  } else {
+    NA
+  }
+  list_levels <- split(1:nlevels(df[[by]]), levels(df[[by]]))
+  df$level_n <- sapply(df[[by]], function(x) {
+    list_levels[[x]]
+  })
+  
+  df %>%
+    tidyr::pivot_wider(
+      id_cols = -c(tidyselect::all_of(by)),
+      names_from = "level_n",
+      names_sep = "",
+      values_from = c("n", "perc", "tot", "con"),
+      values_fill = na_str
+    )
+}
+
+#' @describeIn sfreq Helper Function for sorting the rows.
+#'
+#' @export
+#'
+h_count_sort <- function(data,
+                         df,
+                         sort_var,
+                         row_tot,
+                         nested_row = FALSE,
+                         .order = NULL) {
+  sorted_res <- if (is.null(.order)) {
+    if (is.factor(data[[sort_var]])) {
+      df %>% arrange(match(.data[[sort_var]], levels(droplevels(data[[sort_var]]))))
+    } else {
+      df %>% arrange(!!sym(sort_var))
+    }
+  } else {
+    df %>% arrange(!!rlang::parse_expr(.order))
+  }
+  if (length(row_tot) > 0 & !nested_row) {
+    sorted_res <- df %>% dplyr::arrange(
+      match(
+        .data[[sort_var]],
+        c(row_tot, .data[[sort_var]][which(.data[[sort_var]] != row_tot)])
+      ),
+      sort_col
+    )
+  }
+  
+  sorted_res %>% ungroup() %>%
+    group_by(!!sym(sort_var)) %>%
+    mutate(var_row_ord = dplyr::cur_group_rows())
+}
