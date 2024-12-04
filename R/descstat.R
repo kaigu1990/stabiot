@@ -2,28 +2,28 @@
 #'
 #' @description `r lifecycle::badge("experimental")`
 #'
-#' Create a summary table for one variable or nested variable by one group, as 
+#' Create a summary table for one variable or nested variable by one group, as
 #' well as a total column if necessary.
 #'
 #' @param data (`data.frame`)\cr a data frame that contains the variables to be
 #'  summarized and grouped.
 #' @param var (`string`)\cr a character variable to be summarized within `data`.
-#' @param nested_vars (`string`)\cr a character variable as the nested level to 
+#' @param nested_vars (`string`)\cr a character variable as the nested level to
 #'  be summarized along with `var`.
 #' @param by (`string`)\cr a character variable for grouping within `data`.
 #' @param fmt (`string`)\cr formatting string from `formatters::list_valid_format_labels()`
 #'  for frequency counts and percentages.
 #' @param denom (`numeric` or `data.frame`)\cr denominator for proportion can be a
 #'  numeric vector of denominators or a data frame where we can count the `var` inside.
-#' @param distinct (`string`)\cr a character variable to determine which level should 
-#'  be kept only unique rows from `data`. Default is 'USUBJID' for normal counting, but 
+#' @param distinct (`string`)\cr a character variable to determine which level should
+#'  be kept only unique rows from `data`. Default is 'USUBJID' for normal counting, but
 #'  it can be set as 'STUDYID' for AE events if necessary.
 #' @param fctdrop (`logical`)\cr whether to include the levels of the variables
 #'  but with no records.
 #' @param col_tot (`logical`)\cr whether to add total column in the output or not.
-#' @param row_tot (`string`)\cr Default set as NULL for no total row, but if set as 
+#' @param row_tot (`string`)\cr Default set as NULL for no total row, but if set as
 #'  'n' or other words that will be defined as a label for total row.
-#' @param nested_row (`logical`)\cr whether to add nested variable in the label row. 
+#' @param nested_row (`logical`)\cr whether to add nested variable in the label row.
 #'  Set to TRUE for AE counting.
 #' @param na_str (`string`)\cr a string to replace `NA` in the output if no records
 #'  will be counted for any category, but not used.
@@ -55,7 +55,7 @@
 #'     by = "TRT01P",
 #'     fmt = "xx (xx.xx%)"
 #'   )
-#'  
+#'
 #' # Count the race by treatment for sex group
 #' rand_adsl %>%
 #'   sfreq(
@@ -63,6 +63,7 @@
 #'     nested_vars = "SEX",
 #'     by = "TRT01P",
 #'     fmt = "xx (xx.xx%)",
+#'     fctdrop = TRUE,
 #'     nested_row = TRUE
 #'   )
 #'
@@ -96,7 +97,7 @@ sfreq <- function(data,
   assert_subset(var, choices = names(data), empty.ok = FALSE)
   assert_subset(nested_vars, choices = names(data), empty.ok = TRUE)
   assert_subset(by, choices = names(data), empty.ok = FALSE)
-  assert_multi_class(denom, c("numeric", "data.frame"))
+  assert_multi_class(denom, c("numeric", "data.frame"), null.ok = TRUE)
   assert_subset(distinct, choices = names(data), empty.ok = FALSE)
   assert_logical(fctdrop)
   assert_logical(col_tot)
@@ -146,7 +147,9 @@ sfreq <- function(data,
   )
 
   # Arrange the rows by specific conditions.
-  grp_num <- cnt_num %>% dplyr::select(starts_with("perc")) %>% ncol()
+  grp_num <- cnt_num %>%
+    dplyr::select(starts_with("perc")) %>%
+    ncol()
   assert_subset(.order,
     choices = c(
       var, paste0("desc(", var, ")"),
@@ -200,10 +203,14 @@ sfreq <- function(data,
     cnt_num_sorted
   }
 
+  ind <- c(
+    match(levels(droplevels(data[[by]])), levels(data[[by]])),
+    nlevels(data[[by]]) + 1
+  )
   cnt_tb <- cnt_num_rst %>%
     ungroup() %>%
-    dplyr::select("label", dplyr::starts_with("con"), "dtype") %>%
-    rlang::set_names(c("Label", levels(data[[by]]), "Total", "DTYPE"))
+    dplyr::select("label", dplyr::num_range("con", ind), "dtype", "varname") %>%
+    rlang::set_names(c("Label", levels(data[[by]])[head(ind, -1)], "Total", "DTYPE", "VARNAME"))
 
   structure(
     list(
