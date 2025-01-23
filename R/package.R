@@ -10,8 +10,8 @@
 #' @importFrom stats pbeta rbinom confint as.formula setNames coef quantile
 #' @importFrom dplyr add_count arrange bind_rows case_when count distinct filter
 #'  full_join left_join group_by mutate row_number rowwise select summarise ungroup
-#'  everything any_of bind_cols bind_rows
-#' @importFrom tidyr pivot_wider
+#'  everything any_of all_of between desc bind_cols bind_rows
+#' @importFrom tidyr pivot_wider starts_with
 #' @importFrom tibble tibble tribble enframe
 #' @importFrom forcats fct fct_drop fct_reorder
 #' @importFrom rlang sym syms := .data
@@ -30,7 +30,7 @@ NULL
 survival::Surv
 
 utils::globalVariables(c(
-  "ADT", "ADT.x", "ADT.y", "AVAL", "AVALC", "AVALC.x", "AVALC.y", "."
+  "ADT", "ADT.x", "ADT.y", "AVAL", "AVALC", "AVALC.x", "AVALC.y", ".", "label"
 ))
 
 .onLoad <- function(libname, pkgname) {

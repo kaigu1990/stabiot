@@ -42,7 +42,7 @@ h_count_add_tot(
 
 h_count_sort(
   data,
-  df,
+  input_data,
   sort_var,
   sort_var2 = NULL,
   row_tot,
@@ -95,6 +95,18 @@ to descending sort the output based on the percentage of the fourth group.}
 
 \item{.rm}{(\code{string})\cr An optional string to remove from the \code{var} variable,
 default is NULL.}
+
+\item{input_data}{(\code{data.frame})\cr The input data frame for counting and sorting.}
+
+\item{tot_df}{(\code{data.frame})\cr The total data frame derived from \code{denom} variable
+for calculating the total.}
+
+\item{dtype}{(\code{string})\cr The data type of the variable, "VAR" for \code{var} variable
+and "NESTED_VARS" for \code{nested_vars} variable.}
+
+\item{sort_var}{(\code{string})\cr The primary sorting variable for \code{var} variable.}
+
+\item{sort_var2}{(\code{string})\cr The secondary sorting variable for \code{sub_var} variable.}
 }
 \value{
 A list with the class \code{sfreq} containing the following components:
@@ -154,7 +166,7 @@ rand_adsl \%>\%
   sfreq(
     var = "SEX",
     by = "TRT01P",
-    fmt = "xx (xx.x\%)"
+    fmt = "xx (xx.xx\%)"
   )
 
 # Count the race by treatment for sex group
@@ -167,6 +179,15 @@ rand_adsl \%>\%
     nested_row = TRUE
   )
   
+# Count the race by treatment for sex group with n(\%) row total
+rand_adsl \%>\%
+  sfreq(
+    var = "RACE",
+    by = "TRT01P",
+    fmt = "xx (xx.xx\%)",
+    row_tot = "n (\%)"
+  )
+
 # Count the AE subjects by treatment for AEDECOD sorted by total column (column 4)
 rand_adae \%>\%
   sfreq(
@@ -216,5 +237,5 @@ rand_adae \%>\%
     nested_row = TRUE,
     .order = "desc(perc4)"
   )
-  
+
 }

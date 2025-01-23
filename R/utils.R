@@ -168,6 +168,12 @@ h_fmt_count_perc <- function(cnt, perc = NULL, format, ...) {
 #' [dplyr::count()]. It can also handle hierarchical (nested) variables and apply
 #' various formatting and filtering options.
 #'
+#' @param input_data (`data.frame`)\cr The input data frame for counting and sorting.
+#' @param tot_df (`data.frame`)\cr The total data frame derived from `denom` variable 
+#'  for calculating the total.
+#' @param dtype (`string`)\cr The data type of the variable, "VAR" for `var` variable 
+#'  and "NESTED_VARS" for `nested_vars` variable.
+#'
 #' @return The `h_count_add_tot` function returns a data frame with counts and
 #' percentages for the specified variables, grouped by the group_by_var. The output
 #' is in a wide format, with additional columns for counts and percentages, and
@@ -220,7 +226,7 @@ h_count_add_tot <- function(input_data,
       # special case, only occur in shiny calculation.
       perc = dplyr::coalesce(.data$n / .data$tot, 0),
     ) %>%
-    select(label, !!!syms(vars), dtype, everything())
+    select("label", !!!syms(vars), "dtype", everything())
 
   # Add total column if required
   rst2 <- NULL
@@ -234,7 +240,7 @@ h_count_add_tot <- function(input_data,
         perc = dplyr::coalesce(.data$n / .data$tot, 0),
         !!sym(by) := "Total"
       ) %>%
-      select(label, !!!syms(vars), dtype, everything())
+      select("label", !!!syms(vars), "dtype", everything())
   }
 
   # Combine the results
@@ -253,11 +259,11 @@ h_count_add_tot <- function(input_data,
   # Apply cutoff filter if required
   df <- if (length(cutoff) == 1) {
     group_by(df, !!sym(var0)) %>%
-      filter(any(perc >= cutoff / 100)) %>%
+      filter(any(.data$perc >= cutoff / 100)) %>%
       ungroup()
   } else if (length(cutoff) == 2) {
     group_by(df, !!sym(var0)) %>%
-      filter(any(between(perc, cutoff[1] / 100, cutoff[2] / 100))) %>%
+      filter(any(between(.data$perc, cutoff[1] / 100, cutoff[2] / 100))) %>%
       ungroup()
   }
 
@@ -283,10 +289,13 @@ h_count_add_tot <- function(input_data,
 #' and allows for custom ordering expressions. Additionally, it can manage total
 #' rows and nested rows within the sorting process.
 #'
+#' @param sort_var (`string`)\cr The primary sorting variable for `var` variable.
+#' @param sort_var2 (`string`)\cr The secondary sorting variable for `sub_var` variable.
+#'
 #' @return The `h_count_sort` function returns a data frame with an additional
 #' `var_row_ord` indicating the order of the rows based on the specified sorting criteria.
 h_count_sort <- function(data,
-                         df,
+                         input_data,
                          sort_var,
                          sort_var2 = NULL,
                          row_tot,
@@ -295,7 +304,7 @@ h_count_sort <- function(data,
   sorted_res <- if (is.null(sort_var2)) {
     if (is.null(.order)) {
       if (length(row_tot) > 0 & !nested_row) {
-        df %>% arrange(
+        input_data %>% arrange(
           match(
             .data[[sort_var]],
             c(row_tot, levels(data[[sort_var]])[which(levels(data[[sort_var]]) != row_tot)])
@@ -303,26 +312,26 @@ h_count_sort <- function(data,
           !!sym(sort_var)
         )
       } else if (is.factor(data[[sort_var]])) {
-        df %>% arrange(match(.data[[sort_var]], levels(data[[sort_var]])))
+        input_data %>% arrange(match(.data[[sort_var]], levels(data[[sort_var]])))
       } else {
-        df %>% arrange(!!sym(sort_var))
+        input_data %>% arrange(!!sym(sort_var))
       }
     } else {
-      df %>% arrange(!!rlang::parse_expr(.order))
+      input_data %>% arrange(!!rlang::parse_expr(.order))
     }
   } else {
     if (is.null(.order)) {
       if (is.factor(data[[sort_var]])) {
-        df %>% arrange(
+        input_data %>% arrange(
           match(.data[[sort_var]], levels(data[[sort_var]])),
           !!sym(sort_var2)
         )
       } else {
-        df %>% arrange(!!sym(sort_var), !!sym(sort_var2))
+        input_data %>% arrange(!!sym(sort_var), !!sym(sort_var2))
       }
     } else {
       ord_var <- str_remove_all(.order, pattern = "desc|\\(|\\)")
-      var_max_df <- df %>%
+      var_max_df <- input_data %>%
         group_by(!!sym(sort_var)) %>%
         mutate(var_max = max(!!sym(ord_var)))
       if (str_detect(.order, "desc")) {

@@ -65,7 +65,7 @@
 #'   sfreq(
 #'     var = "SEX",
 #'     by = "TRT01P",
-#'     fmt = "xx (xx.x%)"
+#'     fmt = "xx (xx.xx%)"
 #'   )
 #'
 #' # Count the race by treatment for sex group
@@ -201,7 +201,7 @@ sfreq <- function(data,
       denom %>%
         filter(!!sym(by) %in% levels(data[[by]])) %>%
         count(!!sym(by), .drop = TRUE) %>%
-        select(all_of(by), tot = n)
+        select(all_of(by), tot = .data$n)
     } else {
       stop("The 'by' variable is required when the 'denom' is a data frame.")
     }
@@ -210,8 +210,8 @@ sfreq <- function(data,
   } else if (is.null(denom)) {
     data %>%
       count(!!sym(by), .drop = FALSE) %>%
-      mutate(tot = n) %>%
-      select(-n)
+      mutate(tot = .data$n) %>%
+      select(-"n")
   }
 
   # add row_tot if needed, and prepare data for counting
@@ -251,7 +251,7 @@ sfreq <- function(data,
   # sort data
   cnt_num_sorted <- h_count_sort(
     data = data,
-    df = cnt_num,
+    input_data = cnt_num,
     sort_var = var,
     sort_var2 = sub_var,
     row_tot = row_tot,
@@ -267,7 +267,7 @@ sfreq <- function(data,
     )
     nested_df_sorted <- h_count_sort(
       data = data,
-      df = nested_df,
+      input_data = nested_df,
       sort_var = nested_vars,
       sort_var2 = sub_var,
       row_tot = row_tot,
@@ -277,7 +277,7 @@ sfreq <- function(data,
     cnt_num_sorted %>%
       left_join(
         nested_df_sorted %>%
-          select(any_of(c(nested_vars, sub_var)), nested_row_ord = var_row_ord),
+          select(any_of(c(nested_vars, sub_var)), "nested_row_ord" = "var_row_ord"),
         by = c(nested_vars, sub_var)
       ) %>%
       bind_rows(
@@ -287,12 +287,12 @@ sfreq <- function(data,
       ) %>%
       mutate(
         nested_row_ord = case_when(
-          str_detect(dtype, "NESTED_VARS") ~ var_row_ord,
-          TRUE ~ nested_row_ord
+          str_detect(dtype, "NESTED_VARS") ~ .data$var_row_ord,
+          TRUE ~ .data$nested_row_ord
         ),
         var_row_ord = case_when(
           str_detect(dtype, "NESTED_VARS") ~ 0,
-          TRUE ~ var_row_ord
+          TRUE ~ .data$var_row_ord
         ),
         varname = case_when(
           str_detect(dtype, "NESTED_VARS") ~ nested_vars[1],
@@ -338,8 +338,8 @@ sfreq <- function(data,
       bymap <- set_names(data.frame(c(levels(data[[by]]), "Total"), grp_num), c(by, "number"))
     } else {
       bymap <- set_names(data.frame(levels(data[[by]]), grp_num), c(by, "number")) %>%
-        distinct(!!sym(by), number) %>%
-        mutate(!!sym(by) := fct_reorder(!!sym(by), number))
+        distinct(!!sym(by), .data$number) %>%
+        mutate(!!sym(by) := fct_reorder(!!sym(by), .data$number))
     }
   } else {
     NULL
