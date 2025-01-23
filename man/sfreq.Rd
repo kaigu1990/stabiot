@@ -2,99 +2,160 @@
 % Please edit documentation in R/descstat.R, R/utils.R
 \name{sfreq}
 \alias{sfreq}
-\alias{h_count_by_add_tot}
+\alias{h_count_add_tot}
 \alias{h_count_sort}
 \title{Summarize Frequency Counts and Percentages}
 \usage{
 sfreq(
   data,
   var,
+  sub_var = NULL,
   nested_vars = NULL,
-  by,
-  fmt,
+  by = NULL,
+  fmt = "xx (xx.x\%)",
   denom = NULL,
-  distinct = "USUBJID",
+  cutoff = 0,
+  distinct_vars = "USUBJID",
   fctdrop = FALSE,
   col_tot = TRUE,
   row_tot = NULL,
   nested_row = FALSE,
-  na_str = NULL,
-  .order = NULL
+  .order = NULL,
+  .rm = NULL
 )
 
-h_count_by_add_tot(
-  data,
-  var = NULL,
+h_count_add_tot(
+  input_data,
+  var,
+  sub_var = NULL,
   nested_vars = NULL,
   by,
   fmt,
+  distinct_vars = NULL,
+  cutoff = 0,
   tot_df,
   dtype,
-  na_str,
-  sort = FALSE,
   fctdrop = FALSE,
   col_tot = TRUE,
   nested_row = TRUE
 )
 
-h_count_sort(data, df, sort_var, row_tot, nested_row = FALSE, .order = NULL)
+h_count_sort(
+  data,
+  input_data,
+  sort_var,
+  sort_var2 = NULL,
+  row_tot,
+  nested_row = FALSE,
+  .order = NULL
+)
 }
 \arguments{
-\item{data}{(\code{data.frame})\cr a data frame that contains the variables to be
-summarized and grouped.}
+\item{data}{(\code{data.frame})\cr a input data frame containing the variables to be summarized.}
 
-\item{var}{(\code{string})\cr a character variable to be summarized within \code{data}.}
+\item{var}{(\code{string})\cr a primary variable to be summarized.}
 
-\item{nested_vars}{(\code{string})\cr a character variable as the nested level to
-be summarized along with \code{var}.}
+\item{sub_var}{(\code{string})\cr an optional sub-variable to be summarized, such as
+AE summary by toxicity grade.}
 
-\item{by}{(\code{string})\cr a character variable for grouping within \code{data}.}
+\item{nested_vars}{(\code{string})\cr an optional nested variable for hierarchical
+summary along with \code{var}, such as AE summary by SOC and PT.}
 
-\item{fmt}{(\code{string})\cr formatting string from \code{formatters::list_valid_format_labels()}
-for frequency counts and percentages.}
+\item{by}{(\code{string})\cr a variable used for grouping the data.}
 
-\item{denom}{(\code{numeric} or \code{data.frame})\cr denominator for proportion can be a
-numeric vector of denominators or a data frame where we can count the \code{var} inside.}
+\item{fmt}{(\code{string})\cr format type from \code{formatters::list_valid_format_labels()}
+for displaying counts and percentages, the default is "xx (xx.x\%)".}
 
-\item{distinct}{(\code{string})\cr a character variable to determine which level should
-be kept only unique rows from \code{data}. Default is 'USUBJID' for normal counting, but
-it can be set as 'STUDYID' for AE events if necessary.}
+\item{denom}{(\code{numeric} or \code{data.frame})\cr denominator for calculating proportion,
+than can be a data frame where we can count the \code{var} inside or a specified numeric vector.}
 
-\item{fctdrop}{(\code{logical})\cr whether to include the levels of the variables
-but with no records.}
+\item{cutoff}{(\code{numeric})\cr a numeric cutoff for filtering results based on percentage,
+default is 0. If it's a numeric vector of length 1, the result with percentage greater
+than the value is retained. If the length is 2, the result with percentage between the
+two values is retained.}
 
-\item{col_tot}{(\code{logical})\cr whether to add total column in the output or not.}
+\item{distinct_vars}{(\code{string})\cr a  variable used to ensure distinct counts,  default
+is 'USUBJID' for normal counting, but for AE events it can be set as Null or
+another variable that can represent the unique AE events.}
 
-\item{row_tot}{(\code{string})\cr Default set as NULL for no total row, but if set as
-'n' or other words that will be defined as a label for total row.}
+\item{fctdrop}{(\code{logical})\cr whether to drop unused factor levels, default is FALSE.}
 
-\item{nested_row}{(\code{logical})\cr whether to add nested variable in the label row.
-Set to TRUE for AE counting.}
+\item{col_tot}{(\code{logical})\cr whether to include a total column in the output.}
 
-\item{na_str}{(\code{string})\cr a string to replace \code{NA} in the output if no records
-will be counted for any category, but not used.}
+\item{row_tot}{(\code{string})\cr An optional label for the total row, default set as NULL
+for no total row, but if set as 'n' or other words that will be defined as a label
+for the total row.}
+
+\item{nested_row}{(\code{logical})\cr whether to include nested rows in the output.
+Suggestion is set to TRUE for AE counting if the \code{nested_vars} is defined.}
+
+\item{.order}{(\code{string})\cr An optional ordering expression, to sort the output
+based on the specified variable. The default is NULL, but can be set as 'desc(perc4)'
+to descending sort the output based on the percentage of the fourth group.}
+
+\item{.rm}{(\code{string})\cr An optional string to remove from the \code{var} variable,
+default is NULL.}
+
+\item{input_data}{(\code{data.frame})\cr The input data frame for counting and sorting.}
+
+\item{tot_df}{(\code{data.frame})\cr The total data frame derived from \code{denom} variable
+for calculating the total.}
+
+\item{dtype}{(\code{string})\cr The data type of the variable, "VAR" for \code{var} variable
+and "NESTED_VARS" for \code{nested_vars} variable.}
+
+\item{sort_var}{(\code{string})\cr The primary sorting variable for \code{var} variable.}
+
+\item{sort_var2}{(\code{string})\cr The secondary sorting variable for \code{sub_var} variable.}
 }
 \value{
-A object \code{Desc} contains an intermediate data with long form for
-post-processing and final data with wide form for presentation.
+A list with the class \code{sfreq} containing the following components:
+\itemize{
+\item \code{cnt_tb}, a final data frame for presentation with necessary columns.
+\item \code{cnt_num}, an intermediate data frame with the counts and percentages for each group.
+It's easy to extract the data for further analysis.
+\item \code{params}, a list of parameters used in the function.
+}
+
+The \code{h_count_add_tot} function returns a data frame with counts and
+percentages for the specified variables, grouped by the group_by_var. The output
+is in a wide format, with additional columns for counts and percentages, and
+optionally includes a total column.
+
+The \code{h_count_sort} function returns a data frame with an additional
+\code{var_row_ord} indicating the order of the rows based on the specified sorting criteria.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-Create a summary table for one variable or nested variable by one group, as
-well as a total column if necessary.
+Create a summary frequency table for a given data frame, including counts and
+percentage for specified variables. It handles nested variables such as AE summary,
+and formatting options, and can incorporate a denominator for proportion calculation.
 }
 \section{Functions}{
 \itemize{
-\item \code{h_count_by_add_tot()}: Helper Function for counting by groups using \code{\link[dplyr:count]{dplyr::count()}}.
+\item \code{h_count_add_tot()}: This helper function is designed to generate a summarized data
+table with counts and percentages based on specified grouping variables using
+\code{\link[dplyr:count]{dplyr::count()}}. It can also handle hierarchical (nested) variables and apply
+various formatting and filtering options.
 
-\item \code{h_count_sort()}: Helper Function for sorting the rows.
+\item \code{h_count_sort()}: This helper function is designed to sort a data frame based
+on one or two sorting variables. It handles both factor and non-factor variables
+and allows for custom ordering expressions. Additionally, it can manage total
+rows and nested rows within the sorting process.
 
 }}
 \note{
 By default, the each category is sorted based on the corresponding factor
 level of \code{var} variable. If the variable is not a factor, that will be sorted
-alphabetically.
+alphabetically. If you would like to sort by specified column, you can use the
+\code{.order} parameter to specify the column name. If the order is descending, you
+can add \code{desc()} before the column name, like \code{.order = "desc(perc4)"}.
+
+If you want to get the nested rows for the specified variables, you can use
+\code{nested_vars} to specify the nested variables, and set \code{nested_row = TRUE}.
+This is useful for AE summary tables when you want to get the
+summary for AE by SOC and PT.
 }
 \examples{
 data(rand_adsl)
@@ -105,17 +166,9 @@ rand_adsl \%>\%
   sfreq(
     var = "SEX",
     by = "TRT01P",
-    fmt = "xx (xx.x\%)"
-  )
-
-# Count the race by treatment with 'xx (xx.xx)' format and replace NA with '0'
-rand_adsl \%>\%
-  sfreq(
-    var = "RACE",
-    by = "TRT01P",
     fmt = "xx (xx.xx\%)"
   )
- 
+
 # Count the race by treatment for sex group
 rand_adsl \%>\%
   sfreq(
@@ -125,8 +178,40 @@ rand_adsl \%>\%
     fmt = "xx (xx.xx\%)",
     nested_row = TRUE
   )
+  
+# Count the race by treatment for sex group with n(\%) row total
+rand_adsl \%>\%
+  sfreq(
+    var = "RACE",
+    by = "TRT01P",
+    fmt = "xx (xx.xx\%)",
+    row_tot = "n (\%)"
+  )
 
-# Count the AE subjects by treatment for AEDECOD and AEBODSYS that sorted by total column
+# Count the AE subjects by treatment for AEDECOD sorted by total column (column 4)
+rand_adae \%>\%
+  sfreq(
+    var = "AEDECOD",
+    by = "TRT01P",
+    fmt = "xx (xx.x\%)",
+    denom = rand_adsl,
+    fctdrop = TRUE,
+    .order = "desc(perc4)"
+  )
+
+# Count the AE subjects by treatment for AEDECOD by AE toxicity grade
+rand_adae \%>\%
+  sfreq(
+    var = "AEDECOD",
+    sub_var = "AETOXGR",
+    by = "TRT01P",
+    fmt = "xx (xx.x\%)",
+    denom = rand_adsl,
+    fctdrop = TRUE,
+    .order = "desc(perc4)"
+  )
+
+# Count the AE subjects by treatment for AEDECOD and AEBODSYS
 rand_adae \%>\%
   sfreq(
     var = "AEDECOD",
@@ -134,9 +219,23 @@ rand_adae \%>\%
     by = "TRT01P",
     fmt = "xx (xx.x\%)",
     denom = rand_adsl,
-    row_tot = NULL,
     fctdrop = TRUE,
     nested_row = TRUE,
     .order = "desc(perc4)"
   )
+
+# Count the AE subjects by treatment for AEDECOD and AEBODSYS by AE toxicity grade
+rand_adae \%>\%
+  sfreq(
+    var = "AEDECOD",
+    sub_var = "AETOXGR",
+    nested_vars = "AEBODSYS",
+    by = "TRT01P",
+    fmt = "xx (xx.x\%)",
+    denom = rand_adsl,
+    fctdrop = TRUE,
+    nested_row = TRUE,
+    .order = "desc(perc4)"
+  )
+
 }

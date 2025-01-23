@@ -19,6 +19,7 @@ Imports:
     DescTools,
     dplyr,
     emmeans,
+    forcats,
     formatters,
     lifecycle,
     lubridate,
@@ -27,18 +28,17 @@ Imports:
     rlang,
     rtables,
     stats,
+    stringr,
     survival,
     survminer,
     tibble,
     tidyr
 Suggests: 
-    knitr,
     mmrm,
     rmarkdown,
     spelling,
     testthat (>= 3.0.0),
     usethis
-VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Language: en-US

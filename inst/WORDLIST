@@ -36,10 +36,12 @@ SHO
 SYSBP
 TRT
 TRTSDT
+USUBJID
 WHAS
 al
 centres
 clogit
+desc
 dia
 doi
 efron
@@ -49,6 +51,7 @@ logrank
 lshtm
 magrittr
 mmHg
+perc
 respondor
 sagepub
 uk

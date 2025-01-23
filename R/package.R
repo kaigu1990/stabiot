@@ -9,10 +9,15 @@
 #' @importFrom lifecycle deprecated
 #' @importFrom stats pbeta rbinom confint as.formula setNames coef quantile
 #' @importFrom dplyr add_count arrange bind_rows case_when count distinct filter
-#'  full_join group_by left_join mutate row_number rowwise select summarise ungroup
-#' @importFrom rlang sym := .data
+#'  full_join left_join group_by mutate row_number rowwise select summarise ungroup
+#'  everything any_of all_of between desc bind_cols bind_rows
+#' @importFrom tidyr pivot_wider starts_with
+#' @importFrom tibble tibble tribble enframe
+#' @importFrom forcats fct fct_drop fct_reorder
+#' @importFrom rlang sym syms := .data
 #' @importFrom rtables analyze basic_table build_table in_rows rcell non_ref_rcell
 #'  split_cols_by
+#' @importFrom stringr str_c str_detect str_replace_all str_remove str_remove_all
 #' @importFrom survival coxph strata
 #' @importFrom survminer pairwise_survdiff
 #' @importFrom lubridate ymd days
@@ -25,7 +30,7 @@ NULL
 survival::Surv
 
 utils::globalVariables(c(
-  "ADT", "ADT.x", "ADT.y", "AVAL", "AVALC", "AVALC.x", "AVALC.y", "."
+  "ADT", "ADT.x", "ADT.y", "AVAL", "AVALC", "AVALC.x", "AVALC.y", ".", "label"
 ))
 
 .onLoad <- function(libname, pkgname) {
